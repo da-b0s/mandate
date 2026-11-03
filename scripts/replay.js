@@ -7,7 +7,7 @@
 // and contributed at least one fact not already given by another paid source in the same task;
 // otherwise "useless"; undelivered = "refund". Applied identically to both runs.
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { rateTask, runTask } from "@mandate/agent";
+import { listReceipts, rateTask, runTask } from "@mandate/agent";
 
 const mode = process.argv[2];
 if (!["on", "off"].includes(mode)) throw new Error("usage: replay.js on|off");
@@ -57,13 +57,26 @@ function scriptedRatings(receipt) {
   return ratings;
 }
 
-const runId = `replay-${mode}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "")}`;
+// --resume <runId> continues an interrupted run from its next unfinished task.
+const ri = process.argv.indexOf("--resume");
+const resumeId = ri > 0 ? process.argv[ri + 1] : null;
+const runId = resumeId ?? `replay-${mode}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, "")}`;
 mkdirSync("docs/replay", { recursive: true });
-const out = { runId, mode, seed, memoryNamespace: process.env.MEMORY_VALUE_NS, grantId: process.env.GRANT_ID, startedAt: new Date().toISOString(), tasks: [] };
+const out = resumeId
+  ? JSON.parse(readFileSync(`docs/replay/${runId}.json`, "utf8"))
+  : { runId, mode, seed, memoryNamespace: process.env.MEMORY_VALUE_NS, grantId: process.env.GRANT_ID, startedAt: new Date().toISOString(), tasks: [] };
+if (resumeId) (out.resumes ??= []).push({ at: new Date().toISOString(), fromTask: out.tasks.length + 1 });
 const save = () => writeFileSync(`docs/replay/${runId}.json`, JSON.stringify(out, null, 2));
 
 for (const [i, t] of tasks.entries()) {
-  const r = await runTask({ ask: t.ask, useMemory: mode === "on" });
+  if (i < out.tasks.length) continue;
+  // On resume, a task paid just before the crash has an unrated receipt: adopt it instead of paying twice.
+  const orphan =
+    resumeId && i === out.tasks.length
+      ? (await listReceipts()).filter((x) => x.grantId === process.env.GRANT_ID && x.ask === t.ask && !x.ratings && x.startedAt > out.startedAt).at(-1)
+      : null;
+  if (orphan) console.log(`adopting paid but unrated receipt ${orphan.taskId}`);
+  const r = orphan ?? (await runTask({ ask: t.ask, useMemory: mode === "on" }));
   const ratings = scriptedRatings(r);
   if (r.payments.length) await rateTask(r.taskId, ratings);
   const wasted = r.payments.filter((p) => ratings[p.service] !== "useful").reduce((s, p) => s + p.amount, 0);

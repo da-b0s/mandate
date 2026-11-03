@@ -20,6 +20,21 @@ function memwal() {
   return client;
 }
 
+/**
+ * The relayer occasionally times out (504). Retry with backoff. Safe for value writes:
+ * a duplicate carries the same version and body, and recall takes the highest version.
+ */
+async function retry(fn, attempts = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i >= attempts) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * i));
+    }
+  }
+}
+
 const envelope = (kind, key, v, body) => `[mdt1|${kind}|${key}|v${v}] ${JSON.stringify(body)}`;
 
 export function parseEnvelope(text) {
@@ -40,7 +55,7 @@ const MAX_OBS = 50;
  */
 export async function recallValue(service, taskType) {
   const key = `${service}:${taskType}`;
-  const res = await memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: NS.value, limit: 10, sort: "recent" });
+  const res = await retry(() => memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: NS.value, limit: 10, sort: "recent" }));
   let best = null;
   for (const hit of res.results) {
     const e = parseEnvelope(hit.text);
@@ -55,13 +70,13 @@ export async function rememberRating(service, taskType, rating, atMs = Date.now(
   const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
   const useful = obs.filter(([r]) => r === "useful").length;
   const body = { service, taskType, useful, useless: obs.length - useful, obs };
-  const saved = await memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), NS.value, { timeoutMs: 90_000 });
+  const saved = await retry(() => memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), NS.value, { timeoutMs: 90_000 }));
   return { blobId: saved.blob_id, v: prev.v + 1 };
 }
 
 /** Fire-and-forget episodic memories (spend, receipt); returns the job id. */
 export async function rememberAsync(ns, kind, key, body) {
-  const accepted = await memwal().remember(envelope(kind, key, 1, body), ns);
+  const accepted = await retry(() => memwal().remember(envelope(kind, key, 1, body), ns));
   return accepted.job_id ?? accepted.id;
 }
 

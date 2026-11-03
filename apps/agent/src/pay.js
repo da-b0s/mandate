@@ -21,7 +21,8 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
   let quote;
   const mppx = Mppx.create({
     polyfill: false,
-    methods: [sui({ client: fullnode, signer, currency: USDC })],
+    // Payments go through the same sign-once, resend-on-network-error path as every other tx.
+    methods: [sui({ client: fullnode, signer, currency: USDC, execute: (tx) => execute(tx, signer) })],
     async onChallenge(challenge, { createCredential }) {
       const r = challenge.request;
       quote = { amount: toBase(r.amount), recipient: r.recipient, currency: r.currency };
@@ -47,9 +48,15 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
   const payment = await verifyPayment(digest, quote);
   log?.({ step: "verified", ...payment });
 
-  const rec = await execute(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }), signer);
-  payment.recordDigest = rec.digest;
-  log?.({ step: "recorded", digest: rec.digest });
+  // The money has moved: a failure here must not lose the receipt. Flag it for scripts/record-pending.js.
+  try {
+    const rec = await execute(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }), signer);
+    payment.recordDigest = rec.digest;
+    log?.({ step: "recorded", digest: rec.digest });
+  } catch (e) {
+    payment.recordError = String(e.message ?? e).slice(0, 300);
+    log?.({ step: "record-failed", digest, error: payment.recordError });
+  }
   return { status: res.status, body, payment };
 }
 

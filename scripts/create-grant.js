@@ -1,13 +1,16 @@
 // Create a mandate on mainnet. Owner = signer of this tx (for now the agent wallet; zkLogin owner comes with the web app).
-// Usage: node scripts/create-grant.js [weeklyUsdc=2] [perCallUsdc=0.10] [days=30] [dormancyMinutes=10080]
+// Usage: node scripts/create-grant.js [weeklyUsdc=2] [perCallUsdc=0.10] [days=30] [dormancyMinutes=10080] [--agent 0x..]
+// The signer (AGENT_SUI_KEY, the main wallet) becomes the owner; --agent names a different agent address.
 import { agentSigner, createGrantTx, execute, readGrant, GRANT_TYPE } from "@mandate/chain";
 
+const ai = process.argv.indexOf("--agent");
+const agentArg = ai > 0 ? process.argv.splice(ai, 2)[1] : null;
 const [weekly = "2", perCall = "0.10", days = "30", dormancyMin = String(7 * 24 * 60)] = process.argv.slice(2);
 const usdc = (x) => Math.round(Number(x) * 1e6);
 const signer = agentSigner();
 const t = await execute(
   createGrantTx({
-    agent: signer.toSuiAddress(),
+    agent: agentArg ?? signer.toSuiAddress(),
     weeklyBudget: usdc(weekly),
     perCallCap: usdc(perCall),
     expiresMs: Date.now() + Number(days) * 86_400_000,

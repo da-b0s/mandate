@@ -11,11 +11,31 @@ export function agentSigner() {
   return Ed25519Keypair.fromSecretKey(secretKey);
 }
 
-/** Sign and execute; throws on failure. Returns { digest, effects, objectTypes }. */
+async function retry(fn, attempts = 4) {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if (i >= attempts) throw e;
+      await new Promise((r) => setTimeout(r, 1500 * i));
+    }
+  }
+}
+
+/**
+ * Sign once, then submit the same signed bytes until the network answers. Resending an
+ * identical signed transaction cannot execute twice, so network errors are safe to retry.
+ * Throws if the transaction itself fails. Returns { digest, effects, objectTypes }.
+ */
 export async function execute(tx, signer) {
-  const res = await fullnode.signAndExecuteTransaction({ transaction: tx, signer, include: { effects: true, objectTypes: true, events: true } });
+  tx.setSenderIfNotSet(signer.toSuiAddress());
+  const bytes = await retry(() => tx.build({ client: fullnode }));
+  const { signature } = await signer.signTransaction(bytes);
+  const res = await retry(() =>
+    fullnode.executeTransaction({ transaction: bytes, signatures: [signature], include: { effects: true, objectTypes: true, events: true } }),
+  );
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error(`tx ${t.digest} failed: ${JSON.stringify(t.effects.status.error)}`);
-  await fullnode.waitForTransaction({ digest: t.digest });
+  await retry(() => fullnode.waitForTransaction({ digest: t.digest }));
   return t;
 }
