@@ -166,15 +166,45 @@ importers:
 
   .:
     dependencies:
+      '@mandate/agent':
+        specifier: workspace:*
+        version: link:apps/agent
       '@mandate/chain':
         specifier: workspace:*
         version: link:packages/chain
+      '@mandate/policy':
+        specifier: workspace:*
+        version: link:packages/policy
       '@mysten-incubation/memwal':
         specifier: 0.1.12
         version: 0.1.12(@mysten/seal@1.5.2(@mysten/sui@2.38.0(typescript@5.9.3)))(@mysten/sui@2.38.0(typescript@5.9.3))(zod@4.6.7)
       '@mysten/sui':
         specifier: 2.38.0
         version: 2.38.0(typescript@5.9.3)
+      '@suimpp/mpp':
+        specifier: 0.9.0
+        version: 0.9.0(typescript@5.9.3)(viem@2.57.16)
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.4.2
+      mppx:
+        specifier: 0.4.12
+        version: 0.4.12(typescript@5.9.3)(viem@2.57.16)
+      viem:
+        specifier: 2.57.16
+        version: 2.57.16(mppx@0.4.12)(typescript@5.9.3)(zod@4.6.7)
+
+  apps/agent:
+    dependencies:
+      '@mandate/chain':
+        specifier: workspace:*
+        version: link:../../packages/chain
+      '@mandate/policy':
+        specifier: workspace:*
+        version: link:../../packages/policy
+      '@mysten-incubation/memwal':
+        specifier: 0.1.12
+        version: 0.1.12(@mysten/seal@1.5.2(@mysten/sui@2.38.0(typescript@5.9.3)))(@mysten/sui@2.38.0(typescript@5.9.3))(zod@4.6.7)
       '@suimpp/mpp':
         specifier: 0.9.0
         version: 0.9.0(typescript@5.9.3)(viem@2.57.16)

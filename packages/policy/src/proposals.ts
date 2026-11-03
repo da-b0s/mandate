@@ -1,6 +1,6 @@
 // Weekly cap proposals (Section 7.4). Proposals only; the owner ratifies onchain.
 
-import type { ValueEstimate } from "./value.js";
+import type { ValueEstimate } from "./value.ts";
 
 export interface CapProposal {
   payee: string;

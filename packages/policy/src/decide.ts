@@ -1,8 +1,8 @@
 // The full pre-payment decision, in the blueprint's order (Section 7.1).
 // The LLM planner only proposes calls; this decides. Limits never come from the LLM.
 
-import { checkGrant, type DenyReason, type GrantState } from "./grant.js";
-import { costPerUseful, estimateValue, valueCheck, type Observation, type ValueEstimate } from "./value.js";
+import { checkGrant, type DenyReason, type GrantState } from "./grant.ts";
+import { costPerUseful, estimateValue, valueCheck, type Observation, type ValueEstimate } from "./value.ts";
 
 export interface Candidate {
   service: string;

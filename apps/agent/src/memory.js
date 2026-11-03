@@ -1,0 +1,71 @@
+// Walrus Memory: what the agent learned (value), what it paid (spend) and why (receipts).
+// Envelopes: [mdt1|<kind>|<key>|v<n>] <json>
+import "dotenv/config";
+import { MemWal } from "@mysten-incubation/memwal";
+
+export const NS = {
+  value: "mandate-value",
+  spend: "mandate-spend",
+  receipts: "mandate-receipts",
+};
+
+let client;
+function memwal() {
+  client ??= MemWal.create({
+    key: process.env.MEMWAL_PRIVATE_KEY,
+    accountId: process.env.MEMWAL_ACCOUNT_ID,
+    serverUrl: process.env.MEMWAL_SERVER_URL,
+    namespace: NS.value,
+  });
+  return client;
+}
+
+const envelope = (kind, key, v, body) => `[mdt1|${kind}|${key}|v${v}] ${JSON.stringify(body)}`;
+
+export function parseEnvelope(text) {
+  const m = text.match(/^\[mdt1\|([^|]+)\|([^|]+)\|v(\d+)\] (.*)$/s);
+  if (!m) return null;
+  try {
+    return { kind: m[1], key: m[2], v: Number(m[3]), body: JSON.parse(m[4]) };
+  } catch {
+    return null;
+  }
+}
+
+const MAX_OBS = 50;
+
+/**
+ * Latest value memory for (service, task type): its observations and the blob that holds them.
+ * Recall is semantic; we keep only exact-key matches and take the highest version.
+ */
+export async function recallValue(service, taskType) {
+  const key = `${service}:${taskType}`;
+  const res = await memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: NS.value, limit: 10, sort: "recent" });
+  let best = null;
+  for (const hit of res.results) {
+    const e = parseEnvelope(hit.text);
+    if (e?.kind === "value" && e.key === key && (!best || e.v > best.v)) best = { ...e, blobId: hit.blob_id };
+  }
+  return { key, v: best?.v ?? 0, obs: (best?.body.obs ?? []).map(([r, at]) => ({ rating: r, atMs: at })), blobId: best?.blobId ?? null };
+}
+
+/** Append a rating; waits so the next task's recall sees it. */
+export async function rememberRating(service, taskType, rating, atMs = Date.now()) {
+  const prev = await recallValue(service, taskType);
+  const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
+  const useful = obs.filter(([r]) => r === "useful").length;
+  const body = { service, taskType, useful, useless: obs.length - useful, obs };
+  const saved = await memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), NS.value, { timeoutMs: 90_000 });
+  return { blobId: saved.blob_id, v: prev.v + 1 };
+}
+
+/** Fire-and-forget episodic memories (spend, receipt); returns the job id. */
+export async function rememberAsync(ns, kind, key, body) {
+  const accepted = await memwal().remember(envelope(kind, key, 1, body), ns);
+  return accepted.job_id ?? accepted.id;
+}
+
+export async function rememberWait(ns, kind, key, body) {
+  const saved = await memwal().rememberAndWait(envelope(kind, key, 1, body), ns, { timeoutMs: 90_000 });
+  return saved.blob_id;
+}
