@@ -1,0 +1,41 @@
+// MPP-paid vendor services. Each route charges USDC on Sui before serving.
+import "dotenv/config";
+import http from "node:http";
+import { Mppx } from "mppx/server";
+import { USDC, sui } from "@suimpp/mpp/server";
+import { InMemoryDigestStore } from "@suimpp/mpp/server";
+import { walletRiskReport } from "./wallet-risk.js";
+
+const PORT = Number(process.env.PORT ?? 4021);
+
+// TODO(D2): swap InMemoryDigestStore for Postgres so replayed digests survive restarts.
+const mppx = Mppx.create({
+  realm: process.env.MPP_REALM ?? "mandate-vendors",
+  methods: [sui({ currency: USDC, recipient: process.env.MPP_RECIPIENT.trim(), store: new InMemoryDigestStore(), network: "mainnet" })],
+});
+
+const routes = {
+  "/v1/wallet-risk": { price: "0.02", run: (q) => walletRiskReport(q.get("address") ?? "") },
+};
+
+http
+  .createServer(async (req, res) => {
+    const url = new URL(req.url, "http://localhost");
+    if (url.pathname === "/health") return res.end("ok");
+    const route = routes[url.pathname];
+    if (!route) {
+      res.statusCode = 404;
+      return res.end(JSON.stringify({ error: "not found", routes: Object.keys(routes) }));
+    }
+    try {
+      const paid = await Mppx.toNodeListener(mppx.charge({ amount: route.price }))(req, res);
+      if (paid.status === 402) return;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify(await route.run(url.searchParams)));
+    } catch (e) {
+      // Paid but failed to deliver: the agent marks this refund-worthy.
+      res.statusCode = 502;
+      res.end(JSON.stringify({ error: String(e.message ?? e) }));
+    }
+  })
+  .listen(PORT, () => console.log(`vendors on :${PORT}`));
