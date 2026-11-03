@@ -45,6 +45,8 @@ export function valueCheck(price: number, v: ValueEstimate, taskValue: number): 
   if (v.n >= MIN_OBS && v.lcb < LCB_FLOOR) {
     return { pay: false, reason: "low_value", detail: `lcb ${v.lcb.toFixed(2)} < ${LCB_FLOOR} after ${v.n} calls` };
   }
+  // Too little evidence to judge: pay and learn, rather than skip on the prior alone.
+  if (v.n < MIN_OBS) return { pay: true };
   const cpu = costPerUseful(price, v);
   if (cpu > taskValue) {
     return { pay: false, reason: "too_costly", detail: `cost per useful ${Math.round(cpu)} > task value ${taskValue}` };

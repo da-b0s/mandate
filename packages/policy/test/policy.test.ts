@@ -115,8 +115,12 @@ describe("decide", () => {
     expect(d).toMatchObject({ action: "skipped", reason: "free_source" });
   });
   it("skips when cost per useful answer exceeds the task's value", () => {
-    const d = decide({ ...base, taskValue: usdc(0.06), history: obs(0, 2), useMemory: true });
+    const d = decide({ ...base, taskValue: usdc(0.06), history: obs(6, 4), useMemory: true });
     expect(d).toMatchObject({ action: "skipped", reason: "too_costly" });
+  });
+  it("never skips on the prior alone: pays to learn when evidence is thin", () => {
+    expect(decide({ ...base, taskValue: usdc(0.06), history: [], useMemory: true }).action).toBe("pay");
+    expect(decide({ ...base, taskValue: usdc(0.06), history: obs(0, 2), useMemory: true }).action).toBe("pay");
   });
 });
 
