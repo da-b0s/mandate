@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: mandate-vendors
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter "@mandate/vendors..."
+    startCommand: node apps/vendors/src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: MPP_REALM
+        value: mandate-vendors
+      - key: TATUM_API_KEY
+        sync: false
+      - key: MPP_RECIPIENT
+        sync: false
+      - key: MPP_SECRET_KEY
+        sync: false
