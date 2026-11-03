@@ -1,23 +1,15 @@
 // Dashboard numbers, computed from receipts. "Wasted" = paid calls later rated useless or refund-worthy.
-import { readdirSync, readFileSync } from "node:fs";
+import { listReceipts as listAll } from "@mandate/store";
 import { SERVICES } from "./catalog.js";
 
-const DATA = process.env.MANDATE_DATA ?? "data";
 const PRICE = Object.fromEntries(SERVICES.map((s) => [s.service, s.price]));
 
-export function listReceipts() {
-  let files = [];
-  try {
-    files = readdirSync(`${DATA}/receipts`).filter((f) => f.endsWith(".json"));
-  } catch {}
-  return files
-    .map((f) => JSON.parse(readFileSync(`${DATA}/receipts/${f}`, "utf8")))
-    .map((r) => ({ ...r, startedAt: r.steps?.[0]?.at ?? null }))
-    .sort((a, b) => String(a.startedAt).localeCompare(String(b.startedAt)));
+export async function listReceipts() {
+  return (await listAll()).map((r) => ({ ...r, startedAt: r.steps?.[0]?.at ?? null }));
 }
 
-export function valueStats() {
-  const receipts = listReceipts().filter((r) => r.task?.type !== "unknown");
+export async function valueStats() {
+  const receipts = (await listReceipts()).filter((r) => r.task?.type !== "unknown");
   const services = {};
   const tasks = receipts.map((r) => {
     const spent = r.payments.reduce((s, p) => s + p.amount, 0);

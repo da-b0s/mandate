@@ -1,22 +1,15 @@
 // The task loop: classify, plan candidates, decide with policy + recalled value,
 // buy what passes, answer, and leave a receipt.
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { decide, rankCandidates } from "@mandate/policy";
 import { readGrant } from "@mandate/chain";
+import { loadReceipt, saveReceipt } from "@mandate/store";
 import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallValue, rememberAsync, rememberRating } from "./memory.js";
 import { writeAnswer } from "./answer.js";
 
-const DATA = process.env.MANDATE_DATA ?? "data";
-mkdirSync(`${DATA}/receipts`, { recursive: true });
-
-export function loadReceipt(taskId) {
-  const p = `${DATA}/receipts/${taskId}.json`;
-  return existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : null;
-}
-const saveReceipt = (r) => writeFileSync(`${DATA}/receipts/${r.taskId}.json`, JSON.stringify(r, null, 2));
+export { loadReceipt };
 
 export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory = true, onStep = () => {} }) {
   const taskId = randomUUID().slice(0, 8);
@@ -32,7 +25,7 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
   const receipt = { taskId, ask, task, useMemory, grantId, plan: [], memoriesUsed: [], payments: [], skipped: [], denied: [], outputs: {}, steps };
   if (task.type === "unknown") {
     receipt.answer = "I need a 0x wallet or token address to work on.";
-    saveReceipt(receipt);
+    await saveReceipt(receipt);
     return receipt;
   }
 
@@ -83,7 +76,7 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
   receipt.answerModel = answer.model;
   receipt.outputHash = createHash("sha256").update(JSON.stringify(receipt.outputs)).digest("hex");
   receipt.totalSpent = receipt.payments.reduce((s, p) => s + p.amount, 0);
-  saveReceipt(receipt);
+  await saveReceipt(receipt);
 
   receipt.memoryJob = await rememberAsync(NS.receipts, "receipt", taskId, {
     ask,
@@ -99,13 +92,13 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
     await rememberAsync(NS.spend, "spend", `${p.service}:${taskId}`, { price: p.amount, digest: p.digest, task: taskId, type: task.type });
   }
   log({ step: "done", totalSpent: receipt.totalSpent });
-  saveReceipt(receipt);
+  await saveReceipt(receipt);
   return receipt;
 }
 
 /** User (or scripted) rating. Each paid service gets its own usefulness verdict. */
 export async function rateTask(taskId, ratings) {
-  const r = loadReceipt(taskId);
+  const r = await loadReceipt(taskId);
   if (!r) throw new Error(`no receipt for ${taskId}`);
   r.ratings = {};
   for (const p of r.payments) {
@@ -113,6 +106,6 @@ export async function rateTask(taskId, ratings) {
     const saved = await rememberRating(p.service, r.task.type, rating);
     r.ratings[p.service] = { rating, valueBlob: saved.blobId, version: saved.v };
   }
-  saveReceipt(r);
+  await saveReceipt(r);
   return r;
 }

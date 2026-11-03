@@ -22,3 +22,5 @@ services:
         sync: false
       - key: MPP_SECRET_KEY
         sync: false
+      - key: DATABASE_URL_POOLED
+        sync: false

@@ -1,0 +1,8 @@
+{
+  "name": "@mandate/store",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.js" },
+  "scripts": { "migrate": "node src/migrate.js" },
+  "dependencies": { "@neondatabase/serverless": "1.2.0", "dotenv": "^17.2.3" }
+}

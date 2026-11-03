@@ -175,6 +175,9 @@ importers:
       '@mandate/policy':
         specifier: workspace:*
         version: link:packages/policy
+      '@mandate/store':
+        specifier: workspace:*
+        version: link:packages/store
       '@mysten-incubation/memwal':
         specifier: 0.1.12
         version: 0.1.12(@mysten/seal@1.5.2(@mysten/sui@2.38.0(typescript@5.9.3)))(@mysten/sui@2.38.0(typescript@5.9.3))(ai@7.0.162(zod@4.6.7))(zod@4.6.7)
@@ -205,6 +208,9 @@ importers:
       '@mandate/policy':
         specifier: workspace:*
         version: link:../../packages/policy
+      '@mandate/store':
+        specifier: workspace:*
+        version: link:../../packages/store
       '@mysten-incubation/memwal':
         specifier: 0.1.12
         version: 0.1.12(@mysten/seal@1.5.2(@mysten/sui@2.38.0(typescript@5.9.3)))(@mysten/sui@2.38.0(typescript@5.9.3))(ai@7.0.162(zod@4.6.7))(zod@4.6.7)
@@ -229,6 +235,9 @@ importers:
       '@mandate/chain':
         specifier: workspace:*
         version: link:../../packages/chain
+      '@mandate/store':
+        specifier: workspace:*
+        version: link:../../packages/store
       '@suimpp/mpp':
         specifier: 0.9.0
         version: 0.9.0(typescript@5.9.3)(viem@2.57.16)
@@ -302,6 +311,15 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@26.6.6)(yaml@2.9.1)
+
+  packages/store:
+    dependencies:
+      '@neondatabase/serverless':
+        specifier: 1.2.0
+        version: 1.2.0
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.4.2
 
 packages:
 
@@ -754,6 +772,10 @@ packages:
     cpu: [x64]
     os: [linux]
     libc: [glibc]
+
+  '@neondatabase/serverless@1.2.0':
+    resolution: {integrity: sha512-tnaqgixUengZQNd9ZrS3ytQfamJzLKY8QxgqWQTNHHtB+KrFQWk77JTbbpg4RD+J3qE4eO2lVytvGDX5Kj6FdQ==}
+    engines: {node: '>=19.0.0'}
 
   '@next/env@16.4.4':
     resolution: {integrity: sha512-6/3ZuELR0tPLgNigvv8d/LAmfLIo1IpNfvrI/AHCAl9w9D0DNVGQGvo+OLPzAWR+WMW3vVyO7HaW0kfL97huBg==}
@@ -1972,6 +1994,8 @@ snapshots:
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
+
+  '@neondatabase/serverless@1.2.0': {}
 
   '@next/env@16.4.4': {}
 

@@ -21,6 +21,7 @@
     "mppx": "0.4.12",
     "viem": "2.57.16",
     "@mandate/agent": "workspace:*",
-    "@mandate/policy": "workspace:*"
+    "@mandate/policy": "workspace:*",
+    "@mandate/store": "workspace:*"
   }
 }

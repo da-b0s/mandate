@@ -4,14 +4,17 @@ import http from "node:http";
 import { Mppx } from "mppx/server";
 import { USDC, sui } from "@suimpp/mpp/server";
 import { InMemoryDigestStore } from "@suimpp/mpp/server";
+import { PgDigestStore } from "@mandate/store";
 import { walletRiskReport } from "./wallet-risk.js";
 import { holderCheck } from "./holders.js";
 import { premiumSummary } from "./summary.js";
 
 const PORT = Number(process.env.PORT ?? 4021);
 
-// TODO(D2): swap InMemoryDigestStore for Postgres so replayed digests survive restarts.
-const store = new InMemoryDigestStore();
+// Used payment digests must survive restarts, or a paid digest could be replayed after a redeploy.
+const hasDb = Boolean(process.env.DATABASE_URL_POOLED || process.env.DATABASE_URL);
+if (!hasDb) console.warn("No DATABASE_URL: using in-memory digest store (replays possible after restart)");
+const store = hasDb ? new PgDigestStore() : new InMemoryDigestStore();
 const charger = (recipient) =>
   Mppx.create({
     realm: process.env.MPP_REALM ?? "mandate-vendors",

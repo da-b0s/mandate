@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f]{8}$/.test(id)) notFound();
-  const r = (await agent()).loadReceipt(id);
+  const r = await (await agent()).loadReceipt(id);
   if (!r) notFound();
 
   return (
