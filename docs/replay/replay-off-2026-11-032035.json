@@ -1,0 +1,1156 @@
+{
+  "runId": "replay-off-2026-11-032035",
+  "mode": "off",
+  "seed": 1,
+  "memoryNamespace": "mandate-value-replay-off",
+  "grantId": "0xd37476f6eee8cd8ecb8afc5ba86fe4ceec732df3a933e1a021bce9e8868fe404",
+  "startedAt": "2026-11-03T20:35:59.141Z",
+  "tasks": [
+    {
+      "i": 1,
+      "id": "w24",
+      "type": "wallet-risk",
+      "taskId": "ebb6661f",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "GR3mkaSiiF1StZKiPGdBYjiDQocAZXY38248Z1FL7tmK",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "Ao3MobMq1sxmuxdifaDz5SSb53238FP3BsZmkJRcbsdR",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 2,
+      "id": "t2",
+      "type": "token-holders",
+      "taskId": "a81a49b5",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "GsY4VKDhJ8obobVR3Hx8pcEG7kTjr8L3TAp6oFrNaisW",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 3,
+      "id": "t25",
+      "type": "token-holders",
+      "taskId": "b77aac7d",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "on94ds9zWymoHzZwK6ZHmKAcYWibLu36pvXyFtrqaGy",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 4,
+      "id": "t6",
+      "type": "token-holders",
+      "taskId": "ed33986a",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "FsY2q1vpmwtb7mciUR2VakRYWBAdDLPAr3ysGtzW6PWY",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 5,
+      "id": "t4",
+      "type": "token-holders",
+      "taskId": "c5d40f78",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "Dg4d5UTAgxW41btkQjPVr9Vp1tA6LtevYxXarcLACdFV",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 6,
+      "id": "t9",
+      "type": "token-holders",
+      "taskId": "ef160b06",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "76dWLN6M5kWJi8gB4gJUGsmkSbrXso9uJNYuQBfohLgh",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 7,
+      "id": "w6",
+      "type": "wallet-risk",
+      "taskId": "1398ecee",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "AXgJcEy4WHzb6QuaQBcqo9eVPPAmGxz1BFjPcXRyoy4v",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "D7BZXo2EUm83q7Jup9XpUG6eHC1DjRWpxtnEFi6AqUQj",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 8,
+      "id": "w11",
+      "type": "wallet-risk",
+      "taskId": "be92f08c",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "F46HRhwvzYvS5Co4pv6xSpeE6mdSTYGbGiJ1ADvZLCiu",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "2yUWzxNx483NLWtgYo9jZCgVjBg2JFVMUXW5vrKfmTWG",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 9,
+      "id": "t5",
+      "type": "token-holders",
+      "taskId": "83888acc",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "BYmukYuDpoHuaWhURoaBVCDMwchvfjSFpYKM97ekr2L3",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 10,
+      "id": "t17",
+      "type": "token-holders",
+      "taskId": "68eb0b27",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "5apdTUAnLncwk3R4DvsRNUKWfRo28PNHf5EchP1rcGvG",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 11,
+      "id": "t3",
+      "type": "token-holders",
+      "taskId": "efcdb557",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "HBdwBL2TRdt2WQCYaT8TL2WTtAZCJ2EajxkPMjJj4pSF",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 12,
+      "id": "w15",
+      "type": "wallet-risk",
+      "taskId": "e1edbc72",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "Hn5oVCwTB6qrjWkMRCPDwqHns446zUmTTzHwAX3q9hL8",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "HE1P7UUqqaojF7yvW9ZGZo8wp5zFWavCmJ4hdafRowi9",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 13,
+      "id": "w20",
+      "type": "wallet-risk",
+      "taskId": "d6cd8e0f",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "81GuLTBoisbjdmbefwdPikTvStVLip4wtoY8dniAw4qM",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "FkZWNYPHf4bcZ9Z3ajTbknJzL5Hbvv66dXEQ5AzEcEKD",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 14,
+      "id": "t8",
+      "type": "token-holders",
+      "taskId": "2ec625e1",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "5NcT5ZdaXGhvyv4FDtjM9Tr1WZbWwWXPKqUajGaM6m2a",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 15,
+      "id": "t14",
+      "type": "token-holders",
+      "taskId": "2270bdb4",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "8QG5diQELNFTaKy3zSZG3h5rUiBky97VFgqqdnEJ753W",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 16,
+      "id": "t13",
+      "type": "token-holders",
+      "taskId": "e5cc6bab",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "7NJCYKYk652KjHscEb2SvtdbCQ7E6Kmw8hCH2bi5MjpG",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 17,
+      "id": "w23",
+      "type": "wallet-risk",
+      "taskId": "02aa5709",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "CbEBiaanFFKPtPNPD2dPriX4xGBM6p35U1YKa8yNnhB2",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "8AiPZgtkBJkuLsFEzvUGTYVWtNjPauaXWTeNQLkWNrfQ",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 18,
+      "id": "w18",
+      "type": "wallet-risk",
+      "taskId": "a39e22e5",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "8bQtZVCUYT4EG53UMEWM7vyDccHQhpK4iFvhg5z7VkyT",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "C3cJTWWWLcR8qdHKMoprsFf6ELwYxgup5q3EV1gQu6az",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 19,
+      "id": "t19",
+      "type": "token-holders",
+      "taskId": "460090a8",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "EpUNFoqD1N6ck3FYdgCJQ9mM45g1C32Zqidau5XBewnX",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 20,
+      "id": "t11",
+      "type": "token-holders",
+      "taskId": "af3694f3",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "6iT4d7sAhJYWSXZMFK1M9RCFaAfbHcxDiiPeA3twdiXp",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 21,
+      "id": "t7",
+      "type": "token-holders",
+      "taskId": "a10be48e",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "4sYH2hW884cd6WRsgnacvWmeQW3Qk1kkWQVxeDXsoKR6",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 22,
+      "id": "w25",
+      "type": "wallet-risk",
+      "taskId": "3e5683ff",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "5sY63vegc81twKxbJocaKFmzK7QiYTAg3b1kkPExUBwP",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "4kTV8xVc5azgWnhx51Xtb8Xtr7NzjEECgrvc88af72Lh",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 23,
+      "id": "t21",
+      "type": "token-holders",
+      "taskId": "973e38f4",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "4V5GVWVotPxL3zEPpqNGiRt1YmtAhR1nek2M1tRyHHuP",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 24,
+      "id": "t16",
+      "type": "token-holders",
+      "taskId": "88803b8e",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "Dz9whHmUHBri99wPceXfBT6PeCDwPi7eNLp9LfNFpPgo",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 25,
+      "id": "t15",
+      "type": "token-holders",
+      "taskId": "ad4cb2b7",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "Bako5f9Kgdf4GNnoQxJc3KWQutPmRqb44uRjpNsGEumR",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 26,
+      "id": "t22",
+      "type": "token-holders",
+      "taskId": "26805574",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "9XPt4AzDutifPgVd18f2rp7wphwgH1aJdaCPJrgaqSKS",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 27,
+      "id": "w10",
+      "type": "wallet-risk",
+      "taskId": "c902e207",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "J5eVWYaDNijt8ZFauFc4nptBq376uRPFnrn62pND93Sh",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "DsxJnpa1biMAkeHVCWWBZZdwZ6gk6E585MjzPo75qmyc",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 28,
+      "id": "w7",
+      "type": "wallet-risk",
+      "taskId": "953a4ef5",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "De5McxV3AY6mBqTYJTD4MMqo8tjhcpKm2tSBmrNWBxFm",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "7BvTbAV1Q69c5WQrdBnReZpKKHTKKNUVeM9gDAYr8Jjg",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 29,
+      "id": "w19",
+      "type": "wallet-risk",
+      "taskId": "026fcef2",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "BxGGPbLMh3Rantysdx3us4KNjq1ttUzKVAxGqGuscCd2",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "6oMdL72ziryQrSPFTDq9k8gxSxuRsGZa5EqNdMZF5iVN",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 30,
+      "id": "t18",
+      "type": "token-holders",
+      "taskId": "690e37ea",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "GGtS3ZkSiSZkGdLgnnSEtYFnLqCRwqK9FRjb7nJ8wNXv",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 31,
+      "id": "w13",
+      "type": "wallet-risk",
+      "taskId": "c083b941",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "23RYHUDvwJaDCQcnxrjivZmAqJ9sbrZkvxryzxgYNuyn",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "6eb8WDrt4Ca64vTstC2f1FJwtLQP3uDDfnWf3WuMTMV1",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 32,
+      "id": "t20",
+      "type": "token-holders",
+      "taskId": "bac49d1a",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "EwdLYRT6Axmy8ax4a6BgwZFV75CXTEbamcvLxZh1jjto",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 33,
+      "id": "w14",
+      "type": "wallet-risk",
+      "taskId": "c4004322",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "BdNpQsXot2DxByBGvRtydKwLHwoAwmjEdMQ8Zq3oVQbk",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "GGy24oB71Pz32ijwbwwaWD9NKrj7GnEpd7WjtqTNYzYN",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 34,
+      "id": "w2",
+      "type": "wallet-risk",
+      "taskId": "9a4d70b1",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "2fkUAqF2AWRcdJBgAXdhQN9Ev2tMYNE82wqujysquHs8",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "3LDXnLhL9ywjmuw9nuTqwLWbor82nYwWRdjt4QFtXeq3",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 35,
+      "id": "w16",
+      "type": "wallet-risk",
+      "taskId": "74ddc5b0",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "t2AnrkJMCgNguREtsX2PMEVb1SpcDrRGLNbzdRSoShv",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "WYoipW3jupjULzBUfJn1xYyiPzqaCGFCFjp94tc3n3x",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 36,
+      "id": "w5",
+      "type": "wallet-risk",
+      "taskId": "c31cfe72",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "jm51GimEP5Xvt9gDfmfftD1s4AmC8HJ6XxoTMtC4SJq",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "2o91urm44WhZUkF9jLQwaWHg2iXTbPZYt9nPpQjmCRZG",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 37,
+      "id": "w8",
+      "type": "wallet-risk",
+      "taskId": "a4b73b4e",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "FH211eLdhomyuvjkqH6dw6wN39ho9WXvhvTKJgSBQJBs",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "RTCiVi8ExRYgXQrkiEwAqvDCwwHvaRVwsNTnAVD3WfY",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 38,
+      "id": "w4",
+      "type": "wallet-risk",
+      "taskId": "6f984a10",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "BeahGo8cehoaw3sv8TjrPWdsVaYeKWMbDnXaB2vDvUNc",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "EWfY4VDACFJVUc3uCfAfsLoz66NV3AGGFQFjcU1yHr9p",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 39,
+      "id": "w22",
+      "type": "wallet-risk",
+      "taskId": "e591ddd9",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "Dkqn1qZoy6emYdEosBRFiNm9e6QnFZwXw64RB6HQ1Fcy",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "D5eiVSn9VXi5b4zpusmyyrFCxquajn6KicG7VFEaH3Yv",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 40,
+      "id": "t23",
+      "type": "token-holders",
+      "taskId": "e04b1c5c",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "3mQhBpVTpQnhGNqSNY1uuSmyAhjCPBgDf3jWpNQZC8iy",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 41,
+      "id": "t1",
+      "type": "token-holders",
+      "taskId": "0524c0cb",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "E77hq9BB54d99RxF91emCxJs9GdQeuTpamLYQGBwH1uU",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 42,
+      "id": "w12",
+      "type": "wallet-risk",
+      "taskId": "6a07380d",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "7EjQ5TaRkJi9b8PXegqXbr99bZTKiv1t9K1EMbNqrYqw",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "39sa1Uwb5tT1mqzWSTdPCotrowAuRBfUtUPnC7kkHcgC",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 43,
+      "id": "w3",
+      "type": "wallet-risk",
+      "taskId": "9bf9f290",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "Cxb2a4nehfNw5D6BmFi6suwsVs54BQEA18At5ZC4w6zu",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "BwLeY9MFnEDaqALnWQdXxhAjSkxDvDt8P9kRMyqNYJ4a",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 44,
+      "id": "w9",
+      "type": "wallet-risk",
+      "taskId": "74739d5d",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "GzQi3ibLQUUw4dLFtzBQbU3VtpUFx4knCAzEdPrcurVn",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "BGzy3dkpuQqBjDCTr9HDNrfsknekBbeKDecjjMBSWcmb",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 45,
+      "id": "t10",
+      "type": "token-holders",
+      "taskId": "2159f91b",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "8duEQZBnywrXQ36gVsvDfytxyaSoYa7pg3GuUVD7Bi6j",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 46,
+      "id": "t24",
+      "type": "token-holders",
+      "taskId": "5f00e515",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "GCasEL6JorofxPAjnhWuAh7Xi5WSZiP1Y35qHfmTxPSG",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 47,
+      "id": "w17",
+      "type": "wallet-risk",
+      "taskId": "83033b9b",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "5eBv5yCEBkWXppRV9BaJYrirMvdtVndCZd4AAQ9WZaak",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "Etz7G8bq8Z1ub6E9QNhS5XBghG3AMZMP5yccp3CQ9xn4",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 48,
+      "id": "w1",
+      "type": "wallet-risk",
+      "taskId": "7e4f5208",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "FbiDJETAcra2iSDkSn67NFzcmJ3WvWVgau2UVkoZx2gi",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "DUdFgBXCDs9xqxxwNsFK7GkdzzC3KGHPxs9NctKwRDz9",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 49,
+      "id": "t12",
+      "type": "token-holders",
+      "taskId": "e2f724ca",
+      "spent": 30000,
+      "wasted": 0,
+      "useful": true,
+      "paid": [
+        {
+          "service": "holders",
+          "amount": 30000,
+          "digest": "BKzKekWTkE5HAGUiomEepxErQqEcq62LQF49pnSMksKD",
+          "rating": "useful"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    },
+    {
+      "i": 50,
+      "id": "w21",
+      "type": "wallet-risk",
+      "taskId": "08663fb2",
+      "spent": 70000,
+      "wasted": 50000,
+      "useful": true,
+      "paid": [
+        {
+          "service": "wallet-risk",
+          "amount": 20000,
+          "digest": "8H856yCzZi4eoua5TKzXtBXwLRca8kQwuhVGZzSSfbSi",
+          "rating": "useful"
+        },
+        {
+          "service": "summary",
+          "amount": 50000,
+          "digest": "C1Rfq1DJLUni25eJDWSRo6cEmQo1VFBABPn6F18XKgb8",
+          "rating": "useless"
+        }
+      ],
+      "skipped": [],
+      "denied": []
+    }
+  ],
+  "resumes": [
+    {
+      "at": "2026-11-03T21:04:01.863Z",
+      "fromTask": 32
+    },
+    {
+      "at": "2026-11-03T21:22:47.355Z",
+      "fromTask": 42
+    },
+    {
+      "at": "2026-11-03T21:25:00.766Z",
+      "fromTask": 43
+    }
+  ],
+  "incidents": [
+    {
+      "at": "2026-11-03 ~20:59Z (approx.)",
+      "task": 32,
+      "what": "Walrus Memory recall timed out (504) while saving a rating; run stopped. Resumed; the paid task-32 receipt was adopted, not paid twice."
+    },
+    {
+      "at": "2026-11-03T21:20Z",
+      "task": 42,
+      "what": "Fullnode fetch failed during record_spend after a 0.02 USDC wallet-risk payment; run stopped before the receipt was saved. Payment GuVr73BWoMB2B5zMsb36Wnf7NedyAYjFg7J9jVaWEpmN was verified via Tatum and recorded on the grant afterwards (445idUEiFvJRwM9JMSZtgsjB6nQ59exTvW34DofYbhsp). Task 42 was re-run, so this run paid 0.02 USDC more than its task totals show.",
+      "orphanPayment": {
+        "digest": "GuVr73BWoMB2B5zMsb36Wnf7NedyAYjFg7J9jVaWEpmN",
+        "amount": 20000
+      }
+    },
+    {
+      "at": "2026-11-03T21:23Z",
+      "task": 43,
+      "what": "Fullnode fetch failed while submitting a payment; run stopped. Checked via Sui GraphQL: the payment never reached the chain, so nothing was orphaned. Payments now use the sign-once resend path."
+    }
+  ],
+  "finishedAt": "2026-11-03T21:35:08.683Z",
+  "totals": {
+    "tasks": 50,
+    "spent": 2500000,
+    "wasted": 1250000,
+    "usefulAnswers": 50,
+    "payments": 75,
+    "denied": 0,
+    "wastedRate": 0.5,
+    "costPerUsefulAnswer": 50000
+  }
+}

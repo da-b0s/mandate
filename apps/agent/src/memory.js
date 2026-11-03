@@ -50,12 +50,20 @@ export function parseEnvelope(text) {
 const MAX_OBS = 50;
 
 /**
+ * Each (service, task type) gets its own value namespace. In one shared namespace, a busy
+ * service's newer memories pushed a quiet service's latest one out of the recall window,
+ * and the agent "forgot" what it had learned.
+ */
+export const valueNamespace = (service, taskType) => `${NS.value}-${service}-${taskType}`;
+
+/**
  * Latest value memory for (service, task type): its observations and the blob that holds them.
- * Recall is semantic; we keep only exact-key matches and take the highest version.
+ * We keep only exact-key matches and take the highest version.
  */
 export async function recallValue(service, taskType) {
   const key = `${service}:${taskType}`;
-  const res = await retry(() => memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: NS.value, limit: 10, sort: "recent" }));
+  const ns = valueNamespace(service, taskType);
+  const res = await retry(() => memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: ns, limit: 5, sort: "recent" }));
   let best = null;
   for (const hit of res.results) {
     const e = parseEnvelope(hit.text);
@@ -70,7 +78,7 @@ export async function rememberRating(service, taskType, rating, atMs = Date.now(
   const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
   const useful = obs.filter(([r]) => r === "useful").length;
   const body = { service, taskType, useful, useless: obs.length - useful, obs };
-  const saved = await retry(() => memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), NS.value, { timeoutMs: 90_000 }));
+  const saved = await retry(() => memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), valueNamespace(service, taskType), { timeoutMs: 90_000 }));
   return { blobId: saved.blob_id, v: prev.v + 1 };
 }
 
