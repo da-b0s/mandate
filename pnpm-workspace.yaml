@@ -1,0 +1,7 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+allowBuilds:
+  protobufjs: false
+minimumReleaseAgeExclude:
+  - viem@2.57.16

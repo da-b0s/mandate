@@ -1,0 +1,22 @@
+{
+  "name": "mandate",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "test": "pnpm -r test",
+    "spike:memwal": "node scripts/spike-memwal.js",
+    "spike:tatum": "node scripts/spike-tatum.js",
+    "spike:mpp": "node scripts/spike-mpp.js",
+    "wallets": "node scripts/check-wallets.js"
+  },
+  "dependencies": {
+    "@mandate/chain": "workspace:*",
+    "@mysten-incubation/memwal": "0.1.12",
+    "@mysten/sui": "2.38.0",
+    "@suimpp/mpp": "0.9.0",
+    "dotenv": "^17.2.3",
+    "mppx": "0.4.12",
+    "viem": "2.57.16"
+  }
+}

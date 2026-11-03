@@ -1,0 +1,9 @@
+[package]
+name = "mandate"
+edition = "2024"
+version = "0.1.0"
+
+[dependencies]
+
+[addresses]
+mandate = "0x0"
