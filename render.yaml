@@ -16,5 +16,9 @@ services:
         sync: false
       - key: MPP_RECIPIENT
         sync: false
+      - key: MPP_RECIPIENT_HOLDERS
+        sync: false
+      - key: MPP_RECIPIENT_SUMMARY
+        sync: false
       - key: MPP_SECRET_KEY
         sync: false
