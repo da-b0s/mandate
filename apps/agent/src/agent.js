@@ -7,6 +7,7 @@ import { readGrant } from "@mandate/chain";
 import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallValue, rememberAsync, rememberRating } from "./memory.js";
+import { writeAnswer } from "./answer.js";
 
 const DATA = process.env.MANDATE_DATA ?? "data";
 mkdirSync(`${DATA}/receipts`, { recursive: true });
@@ -76,7 +77,10 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
     }
   }
 
-  receipt.answer = composeAnswer(receipt.outputs);
+  log({ step: "answering" });
+  const answer = await writeAnswer({ ask, outputs: receipt.outputs, skipped: receipt.skipped });
+  receipt.answer = answer.text;
+  receipt.answerModel = answer.model;
   receipt.outputHash = createHash("sha256").update(JSON.stringify(receipt.outputs)).digest("hex");
   receipt.totalSpent = receipt.payments.reduce((s, p) => s + p.amount, 0);
   saveReceipt(receipt);
@@ -111,11 +115,4 @@ export async function rateTask(taskId, ratings) {
   }
   saveReceipt(r);
   return r;
-}
-
-function composeAnswer(outputs) {
-  const parts = Object.entries(outputs)
-    .filter(([, o]) => o && !o.error)
-    .map(([s, o]) => `${s}: ${o.summary}`);
-  return parts.length ? parts.join("\n") : "No paid source delivered an answer; nothing useful to report.";
 }

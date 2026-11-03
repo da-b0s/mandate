@@ -1,0 +1,244 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { short, suiscanTx, usdc } from "@/lib/format";
+import { GrantBar } from "./grant-bar";
+
+type Step = { step: string; at?: string; [k: string]: any };
+type Run = { ask: string; useMemory: boolean; steps: Step[]; receipt?: any; error?: string; ratings?: Record<string, any> };
+
+const EXAMPLES = [
+  "Is wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 safe to trade with?",
+  "Brief me on the risks of wallet 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13",
+  "Who holds token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48? Any sanctioned holders?",
+];
+
+export default function AgentPage() {
+  const [ask, setAsk] = useState("");
+  const [useMemory, setUseMemory] = useState(true);
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [grantKey, setGrantKey] = useState(0);
+
+  async function submit(text: string) {
+    if (!text.trim() || busy) return;
+    setBusy(true);
+    setAsk("");
+    const idx = runs.length;
+    setRuns((r) => [...r, { ask: text, useMemory, steps: [] }]);
+    const update = (f: (r: Run) => Run) => setRuns((rs) => rs.map((r, i) => (i === idx ? f(r) : r)));
+    try {
+      const res = await fetch("/api/tasks", { method: "POST", body: JSON.stringify({ ask: text, useMemory }) });
+      if (!res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const msg = JSON.parse(buf.slice(0, nl));
+          buf = buf.slice(nl + 1);
+          if (msg.step) update((r) => ({ ...r, steps: [...r.steps, msg.step] }));
+          if (msg.receipt) update((r) => ({ ...r, receipt: msg.receipt }));
+          if (msg.error) update((r) => ({ ...r, error: msg.error }));
+        }
+      }
+    } catch (e) {
+      update((r) => ({ ...r, error: String((e as Error).message) }));
+    } finally {
+      setBusy(false);
+      setGrantKey((k) => k + 1);
+    }
+  }
+
+  return (
+    <div className="stack">
+      <div>
+        <h1>Give the agent a task</h1>
+        <p className="muted small" style={{ margin: 0 }}>
+          It buys data with USDC on Sui, inside limits enforced by your onchain grant, and remembers which services were worth it.
+        </p>
+      </div>
+      <GrantBar refreshKey={grantKey} />
+
+      {runs.map((run, i) => (
+        <RunView key={i} run={run} onRated={(ratings) => setRuns((rs) => rs.map((r, j) => (j === i ? { ...r, ratings } : r)))} />
+      ))}
+
+      <div className="card stack">
+        <textarea
+          value={ask}
+          placeholder="e.g. Is wallet 0x… safe to trade with?"
+          onChange={(e) => setAsk(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              submit(ask);
+            }
+          }}
+        />
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <div className="row">
+            <span className="small muted">Memory</span>
+            <div className="toggle">
+              <button className={useMemory ? "on" : ""} onClick={() => setUseMemory(true)}>
+                ON
+              </button>
+              <button className={!useMemory ? "on" : ""} onClick={() => setUseMemory(false)}>
+                OFF
+              </button>
+            </div>
+          </div>
+          <button className="primary" disabled={busy || !ask.trim()} onClick={() => submit(ask)}>
+            {busy ? "Working…" : "Run task"}
+          </button>
+        </div>
+        {runs.length === 0 && (
+          <div className="stack small">
+            <span className="muted">Try one:</span>
+            {EXAMPLES.map((e) => (
+              <button key={e} style={{ textAlign: "left" }} onClick={() => setAsk(e)}>
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RunView({ run, onRated }: { run: Run; onRated: (r: Record<string, any>) => void }) {
+  const r = run.receipt;
+  return (
+    <div className="card stack">
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <strong>{run.ask}</strong>
+        <span className={`pill ${run.useMemory ? "" : "warn"}`}>memory {run.useMemory ? "on" : "off"}</span>
+      </div>
+      <ul className="steps">
+        {run.steps.map((s, i) => (
+          <StepLine key={i} s={s} />
+        ))}
+        {!r && !run.error && (
+          <li className="muted">
+            <span className="icon">…</span>working
+          </li>
+        )}
+      </ul>
+      {run.error && <div className="pill bad">{run.error}</div>}
+      {r && (
+        <>
+          <div className="card" style={{ background: "var(--bg)" }}>
+            <div style={{ whiteSpace: "pre-wrap" }}>{r.answer}</div>
+            <div className="small muted" style={{ marginTop: 8 }}>
+              {r.answerModel ? `Written by ${r.answerModel} from paid sources only` : "Summary of paid sources"}
+            </div>
+          </div>
+          <div className="row small">
+            <span className="pill ok">spent {usdc(r.totalSpent ?? 0)}</span>
+            {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
+            {r.denied.length > 0 && <span className="pill bad">denied {r.denied.length}</span>}
+            {r.memoriesUsed.length > 0 && <span className="pill">recalled {r.memoriesUsed.length} memories</span>}
+            <Link href={`/receipts/${r.taskId}`}>Full receipt →</Link>
+          </div>
+          {r.payments.length > 0 && <Rate taskId={r.taskId} payments={r.payments} rated={run.ratings} onRated={onRated} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StepLine({ s }: { s: Step }) {
+  const svc = s.service ? <strong>{s.service}</strong> : null;
+  const line = (icon: string, body: React.ReactNode, tone?: string) => (
+    <li style={tone ? { color: `var(--${tone})` } : undefined}>
+      <span className="icon">{icon}</span>
+      <span>{body}</span>
+    </li>
+  );
+  switch (s.step) {
+    case "classified":
+      return line("🔎", <>Task: {s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
+    case "planned":
+      return line("🗺", <>Plan: {s.plan.join(" → ") || "nothing to buy"}</>);
+    case "skipped":
+      return line("⏭", <>Skipped {svc}: {s.reason.replace("_", " ")} <span className="muted">({s.detail})</span></>, "warn");
+    case "denied":
+      return line("⛔", <>GRANT_DENIED: {s.reason} for {svc} <span className="muted">({s.detail})</span></>, "bad");
+    case "buying":
+      return line("🛒", <>Buying {svc} for {usdc(s.price)}</>);
+    case "quote":
+      return line("🧾", <>Quote from {svc}: {usdc(s.amount)} to <code>{short(s.recipient)}</code></>);
+    case "grant-ok":
+      return line("✅", <>Grant allows it: {usdc(s.spentThisWeek)} of {usdc(s.weeklyBudget)} spent this week <span className="muted">(read via Tatum)</span></>);
+    case "paid":
+      return line("💸", <>Paid {svc}: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
+    case "verified":
+      return line("🛡", <>Payment verified through Tatum gRPC</>, "ok");
+    case "recorded":
+      return line("⛓", <>Spend recorded on the grant: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
+    case "delivery-failed":
+      return line("⚠", <>{svc} failed to deliver (HTTP {s.status}); marked refund-worthy</>, "bad");
+    case "answering":
+      return line("✍", <>Writing the answer</>);
+    case "done":
+      return line("🏁", <>Done</>);
+    default:
+      return null;
+  }
+}
+
+function Rate({ taskId, payments, rated, onRated }: { taskId: string; payments: any[]; rated?: Record<string, any>; onRated: (r: Record<string, any>) => void }) {
+  const [choice, setChoice] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  useEffect(() => setChoice(Object.fromEntries(payments.map((p) => [p.service, "useful"]))), [payments]);
+
+  if (rated) {
+    return (
+      <div className="row small">
+        <span className="muted">Learned:</span>
+        {Object.entries(rated).map(([svc, v]: any) => (
+          <span key={svc} className={`pill ${v.rating === "useful" ? "ok" : "bad"}`}>
+            {svc}: {v.rating}
+          </span>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="stack small" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+      <span className="muted">Was each paid source worth it? The agent will remember.</span>
+      {payments.map((p) => (
+        <div key={p.service} className="row">
+          <span style={{ minWidth: 100 }}>{p.service}</span>
+          <div className="toggle">
+            {["useful", "useless"].map((v) => (
+              <button key={v} className={choice[p.service] === v ? "on" : ""} onClick={() => setChoice((c) => ({ ...c, [p.service]: v }))}>
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div>
+        <button
+          className="primary"
+          disabled={saving}
+          onClick={async () => {
+            setSaving(true);
+            const res = await fetch(`/api/tasks/${taskId}/rating`, { method: "POST", body: JSON.stringify({ ratings: choice }) });
+            const j = await res.json();
+            setSaving(false);
+            if (j.ratings) onRated(j.ratings);
+          }}
+        >
+          {saving ? "Saving to Walrus Memory…" : "Save rating"}
+        </button>
+      </div>
+    </div>
+  );
+}
