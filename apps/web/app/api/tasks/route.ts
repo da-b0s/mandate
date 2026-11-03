@@ -1,4 +1,5 @@
 import { agent } from "@/lib/agent";
+import { allowTask } from "@/lib/limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -9,6 +10,8 @@ export async function POST(req: Request) {
   if (typeof ask !== "string" || ask.length === 0 || ask.length > 500) {
     return Response.json({ error: "ask must be 1-500 characters" }, { status: 400 });
   }
+  const gate = allowTask(req);
+  if (!gate.ok) return Response.json({ error: gate.error }, { status: 429 });
   const { runTask } = await agent();
   const enc = new TextEncoder();
   const stream = new ReadableStream({

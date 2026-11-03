@@ -29,6 +29,7 @@ export default function AgentPage() {
     const update = (f: (r: Run) => Run) => setRuns((rs) => rs.map((r, i) => (i === idx ? f(r) : r)));
     try {
       const res = await fetch("/api/tasks", { method: "POST", body: JSON.stringify({ ask: text, useMemory }) });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `HTTP ${res.status}`);
       if (!res.body) throw new Error(`HTTP ${res.status}`);
       const reader = res.body.getReader();
       const dec = new TextDecoder();

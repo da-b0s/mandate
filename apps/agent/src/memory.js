@@ -4,7 +4,7 @@ import "dotenv/config";
 import { MemWal } from "@mysten-incubation/memwal";
 
 export const NS = {
-  value: "mandate-value",
+  value: process.env.MEMORY_VALUE_NS ?? "mandate-value",
   spend: "mandate-spend",
   receipts: "mandate-receipts",
 };
@@ -68,4 +68,16 @@ export async function rememberAsync(ns, kind, key, body) {
 export async function rememberWait(ns, kind, key, body) {
   const saved = await memwal().rememberAndWait(envelope(kind, key, 1, body), ns, { timeoutMs: 90_000 });
   return saved.blob_id;
+}
+
+/** Memory counts per namespace, straight from the relayer (for the Proof page). */
+export async function memoryCounts() {
+  const out = [];
+  let cursor;
+  do {
+    const page = await memwal().listNamespaces(cursor ? { cursor } : undefined);
+    out.push(...page.namespaces.map((n) => ({ name: n.name, memories: n.memory_count, bytes: n.storage_used })));
+    cursor = page.has_more ? page.next_cursor : undefined;
+  } while (cursor);
+  return out;
 }

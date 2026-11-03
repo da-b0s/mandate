@@ -5,6 +5,7 @@ declare module "@mandate/agent" {
   export function loadReceipt(taskId: string): Promise<any>;
   export function listReceipts(): Promise<any[]>;
   export function valueStats(): Promise<any>;
+  export function proofData(): Promise<any>;
 }
 declare module "@mandate/chain" {
   export function readGrant(grantId: string | undefined): Promise<any>;

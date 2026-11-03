@@ -1,0 +1,252 @@
+[
+ {
+  "id": "w1",
+  "type": "wallet-risk",
+  "ask": "Is wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 safe to trade with?"
+ },
+ {
+  "id": "t1",
+  "type": "token-holders",
+  "ask": "Are any of the top holders of token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 flagged?"
+ },
+ {
+  "id": "w2",
+  "type": "wallet-risk",
+  "ask": "Brief me on the risks of wallet 0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b before I trade with it"
+ },
+ {
+  "id": "t2",
+  "type": "token-holders",
+  "ask": "Give me a holder risk check for token contract 0xdAC17F958D2ee523a2206206994597C13D831ec7"
+ },
+ {
+  "id": "w3",
+  "type": "wallet-risk",
+  "ask": "Should I accept a payment from 0x8589427373D6D84E98730D7795D8f6f8731FDA16?"
+ },
+ {
+  "id": "t3",
+  "type": "token-holders",
+  "ask": "Is token 0x6B175474E89094C44Da98b954EedeAC495271d0F held by sanctioned wallets?"
+ },
+ {
+  "id": "w4",
+  "type": "wallet-risk",
+  "ask": "Run a counterparty check on 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"
+ },
+ {
+  "id": "t4",
+  "type": "token-holders",
+  "ask": "Who holds token 0x514910771AF9Ca656af840dff83E8264EcF986CA? Any sanctioned holders?"
+ },
+ {
+  "id": "w5",
+  "type": "wallet-risk",
+  "ask": "Is 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13 sanctioned or linked to anything bad?"
+ },
+ {
+  "id": "t5",
+  "type": "token-holders",
+  "ask": "Check the holders of token 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984 before I list it"
+ },
+ {
+  "id": "w6",
+  "type": "wallet-risk",
+  "ask": "Is wallet 0x0c1d9121815917ba488fe8b8d9d122b1a86077b3a724bcf1cc6bb3ef19ba014d safe to trade with?"
+ },
+ {
+  "id": "t6",
+  "type": "token-holders",
+  "ask": "Are any of the top holders of token 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 flagged?"
+ },
+ {
+  "id": "w7",
+  "type": "wallet-risk",
+  "ask": "Brief me on the risks of wallet 0xe2ec35cbf7f21288815fdf12b75eb9480b671a965ffe13007207a5d05dd9322f before I trade with it"
+ },
+ {
+  "id": "t7",
+  "type": "token-holders",
+  "ask": "Give me a holder risk check for token contract 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9"
+ },
+ {
+  "id": "w8",
+  "type": "wallet-risk",
+  "ask": "Should I accept a payment from 0x098B716B8Aaf21512996dC57EB0615e2383E2f96?"
+ },
+ {
+  "id": "t8",
+  "type": "token-holders",
+  "ask": "Is token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 held by sanctioned wallets?"
+ },
+ {
+  "id": "w9",
+  "type": "wallet-risk",
+  "ask": "Run a counterparty check on 0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b"
+ },
+ {
+  "id": "t9",
+  "type": "token-holders",
+  "ask": "Who holds token 0xdAC17F958D2ee523a2206206994597C13D831ec7? Any sanctioned holders?"
+ },
+ {
+  "id": "w10",
+  "type": "wallet-risk",
+  "ask": "Is 0x8589427373D6D84E98730D7795D8f6f8731FDA16 sanctioned or linked to anything bad?"
+ },
+ {
+  "id": "t10",
+  "type": "token-holders",
+  "ask": "Check the holders of token 0x6B175474E89094C44Da98b954EedeAC495271d0F before I list it"
+ },
+ {
+  "id": "w11",
+  "type": "wallet-risk",
+  "ask": "Is wallet 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 safe to trade with?"
+ },
+ {
+  "id": "t11",
+  "type": "token-holders",
+  "ask": "Are any of the top holders of token 0x514910771AF9Ca656af840dff83E8264EcF986CA flagged?"
+ },
+ {
+  "id": "w12",
+  "type": "wallet-risk",
+  "ask": "Brief me on the risks of wallet 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13 before I trade with it"
+ },
+ {
+  "id": "t12",
+  "type": "token-holders",
+  "ask": "Give me a holder risk check for token contract 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984"
+ },
+ {
+  "id": "w13",
+  "type": "wallet-risk",
+  "ask": "Should I accept a payment from 0x0c1d9121815917ba488fe8b8d9d122b1a86077b3a724bcf1cc6bb3ef19ba014d?"
+ },
+ {
+  "id": "t13",
+  "type": "token-holders",
+  "ask": "Is token 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 held by sanctioned wallets?"
+ },
+ {
+  "id": "w14",
+  "type": "wallet-risk",
+  "ask": "Run a counterparty check on 0xe2ec35cbf7f21288815fdf12b75eb9480b671a965ffe13007207a5d05dd9322f"
+ },
+ {
+  "id": "t14",
+  "type": "token-holders",
+  "ask": "Who holds token 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9? Any sanctioned holders?"
+ },
+ {
+  "id": "w15",
+  "type": "wallet-risk",
+  "ask": "Is 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 sanctioned or linked to anything bad?"
+ },
+ {
+  "id": "t15",
+  "type": "token-holders",
+  "ask": "Check the holders of token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 before I list it"
+ },
+ {
+  "id": "w16",
+  "type": "wallet-risk",
+  "ask": "Is wallet 0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b safe to trade with?"
+ },
+ {
+  "id": "t16",
+  "type": "token-holders",
+  "ask": "Are any of the top holders of token 0xdAC17F958D2ee523a2206206994597C13D831ec7 flagged?"
+ },
+ {
+  "id": "w17",
+  "type": "wallet-risk",
+  "ask": "Brief me on the risks of wallet 0x8589427373D6D84E98730D7795D8f6f8731FDA16 before I trade with it"
+ },
+ {
+  "id": "t17",
+  "type": "token-holders",
+  "ask": "Give me a holder risk check for token contract 0x6B175474E89094C44Da98b954EedeAC495271d0F"
+ },
+ {
+  "id": "w18",
+  "type": "wallet-risk",
+  "ask": "Should I accept a payment from 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045?"
+ },
+ {
+  "id": "t18",
+  "type": "token-holders",
+  "ask": "Is token 0x514910771AF9Ca656af840dff83E8264EcF986CA held by sanctioned wallets?"
+ },
+ {
+  "id": "w19",
+  "type": "wallet-risk",
+  "ask": "Run a counterparty check on 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13"
+ },
+ {
+  "id": "t19",
+  "type": "token-holders",
+  "ask": "Who holds token 0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984? Any sanctioned holders?"
+ },
+ {
+  "id": "w20",
+  "type": "wallet-risk",
+  "ask": "Is 0x0c1d9121815917ba488fe8b8d9d122b1a86077b3a724bcf1cc6bb3ef19ba014d sanctioned or linked to anything bad?"
+ },
+ {
+  "id": "t20",
+  "type": "token-holders",
+  "ask": "Check the holders of token 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2 before I list it"
+ },
+ {
+  "id": "w21",
+  "type": "wallet-risk",
+  "ask": "Is wallet 0xe2ec35cbf7f21288815fdf12b75eb9480b671a965ffe13007207a5d05dd9322f safe to trade with?"
+ },
+ {
+  "id": "t21",
+  "type": "token-holders",
+  "ask": "Are any of the top holders of token 0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9 flagged?"
+ },
+ {
+  "id": "w22",
+  "type": "wallet-risk",
+  "ask": "Brief me on the risks of wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 before I trade with it"
+ },
+ {
+  "id": "t22",
+  "type": "token-holders",
+  "ask": "Give me a holder risk check for token contract 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+ },
+ {
+  "id": "w23",
+  "type": "wallet-risk",
+  "ask": "Should I accept a payment from 0xd90e2f925DA726b50C4Ed8D0Fb90Ad053324F31b?"
+ },
+ {
+  "id": "t23",
+  "type": "token-holders",
+  "ask": "Is token 0xdAC17F958D2ee523a2206206994597C13D831ec7 held by sanctioned wallets?"
+ },
+ {
+  "id": "w24",
+  "type": "wallet-risk",
+  "ask": "Run a counterparty check on 0x8589427373D6D84E98730D7795D8f6f8731FDA16"
+ },
+ {
+  "id": "t24",
+  "type": "token-holders",
+  "ask": "Who holds token 0x6B175474E89094C44Da98b954EedeAC495271d0F? Any sanctioned holders?"
+ },
+ {
+  "id": "w25",
+  "type": "wallet-risk",
+  "ask": "Is 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 sanctioned or linked to anything bad?"
+ },
+ {
+  "id": "t25",
+  "type": "token-holders",
+  "ask": "Check the holders of token 0x514910771AF9Ca656af840dff83E8264EcF986CA before I list it"
+ }
+]

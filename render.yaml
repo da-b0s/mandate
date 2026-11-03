@@ -24,3 +24,34 @@ services:
         sync: false
       - key: DATABASE_URL_POOLED
         sync: false
+  - type: web
+    name: mandate-web
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --filter "@mandate/web..." && pnpm --filter @mandate/web build
+    startCommand: pnpm --filter @mandate/web start
+    healthCheckPath: /api/grant
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: VENDORS_URL
+        value: https://mandate-vendors.onrender.com
+      - key: GRANT_ID
+        sync: false
+      - key: REPLAY_GRANT_ID
+        sync: false
+      - key: AGENT_SUI_KEY
+        sync: false
+      - key: TATUM_API_KEY
+        sync: false
+      - key: MEMWAL_ACCOUNT_ID
+        sync: false
+      - key: MEMWAL_PRIVATE_KEY
+        sync: false
+      - key: MEMWAL_SERVER_URL
+        value: https://relayer.memory.walrus.xyz
+      - key: GOOGLE_GENERATIVE_AI_API_KEY
+        sync: false
+      - key: DATABASE_URL_POOLED
+        sync: false

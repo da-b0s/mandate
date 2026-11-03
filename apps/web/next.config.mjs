@@ -6,6 +6,7 @@ try {
   process.loadEnvFile(path.join(root, ".env"));
 } catch {}
 process.env.MANDATE_DATA ??= path.join(root, "data");
+process.env.MANDATE_ROOT ??= root;
 
 /** @type {import('next').NextConfig} */
 export default {
