@@ -3,6 +3,7 @@ packages:
   - "apps/*"
 allowBuilds:
   protobufjs: false
+  esbuild: false
 minimumReleaseAgeExclude:
   - viem@2.57.16
   - "@ai-sdk/gateway@4.0.135"
