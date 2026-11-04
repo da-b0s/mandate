@@ -11,4 +11,9 @@ await sql()`create table if not exists mpp_digests (
   digest text primary key,
   created_at timestamptz not null default now()
 )`;
+await sql()`create table if not exists settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+)`;
 console.log("tables ready");

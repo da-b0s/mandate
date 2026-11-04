@@ -8,12 +8,17 @@ declare module "@mandate/agent" {
   export function proofData(): Promise<any>;
   export function capProposals(grantId?: string): Promise<any>;
   export function recordRatification(o: { grantId: string; digest: string }): Promise<any>;
+  export function activeGrantId(): Promise<string>;
+  export function adoptGrant(grantId: string): Promise<any>;
+  export function agentAddress(): string;
+  export function appOwner(): Promise<string>;
 }
 declare module "@mandate/chain" {
   export function readGrant(grantId: string | undefined): Promise<any>;
   export function setServiceCapTx(o: { grantId: string; payee: string; cap: number }): any;
   export function heartbeatTx(o: { grantId: string }): any;
   export function revokeTx(o: { grantId: string }): any;
+  export function createGrantTx(o: { agent: string; weeklyBudget: number; perCallCap: number; expiresMs: number; dormancyMs: number }): any;
   export function buildFor(tx: any, sender: string): Promise<string>;
   export function submitSigned(bytes: string, signature: string): Promise<any>;
 }

@@ -133,6 +133,8 @@ export default function MandatePage() {
         )}
       </div>
 
+      <CreateMandate disabled={!isOwner || busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+
       <div className="card stack">
         <h2>Dead man&apos;s switch</h2>
         <p className="small muted" style={{ margin: 0 }}>
@@ -151,6 +153,44 @@ export default function MandatePage() {
             {busy === "revoke" ? "Signing…" : "Revoke grant"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+type MandateForm = { weeklyUsdc: string; perCallUsdc: string; days: string; heartbeatHours: string };
+
+// Blueprint 3.2: the owner sets the limits; the agent is named in the grant but cannot change them.
+function CreateMandate({ disabled, busy, onCreate }: { disabled: boolean; busy: boolean; onCreate: (f: MandateForm) => void }) {
+  const [f, setF] = useState<MandateForm>({ weeklyUsdc: "2", perCallUsdc: "0.10", days: "30", heartbeatHours: "168" });
+  const field = (k: keyof MandateForm, label: string, hint: string) => (
+    <label className="stack small" style={{ gap: 4 }}>
+      <span>{label}</span>
+      <input
+        value={f[k]}
+        inputMode="decimal"
+        onChange={(e) => setF({ ...f, [k]: e.target.value })}
+        style={{ font: "inherit", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--border)", background: "var(--surface)", color: "var(--text)" }}
+      />
+      <span className="muted">{hint}</span>
+    </label>
+  );
+  return (
+    <div className="card stack">
+      <h2>New mandate</h2>
+      <p className="small muted" style={{ margin: 0 }}>
+        Creates a fresh grant on Sui, signed by you, and the agent switches to it. The old grant keeps its history.
+      </p>
+      <div className="grid">
+        {field("weeklyUsdc", "Weekly budget (USDC)", "most it can spend in 7 days")}
+        {field("perCallUsdc", "Per-call cap (USDC)", "most for any one purchase")}
+        {field("days", "Expires in (days)", "then every payment is refused")}
+        {field("heartbeatHours", "Heartbeat window (hours)", "freezes if you go quiet this long")}
+      </div>
+      <div>
+        <button className="primary" disabled={disabled} onClick={() => onCreate(f)}>
+          {busy ? "Signing…" : "Create mandate"}
+        </button>
       </div>
     </div>
   );

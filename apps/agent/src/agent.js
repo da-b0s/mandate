@@ -9,10 +9,12 @@ import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallValue, rememberAsync, rememberRating } from "./memory.js";
 import { writeAnswer } from "./answer.js";
 import { archiveReport } from "./archive.js";
+import { activeGrantId } from "./mandate.js";
 
 export { loadReceipt };
 
-export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory = true, onStep = () => {} }) {
+export async function runTask({ ask, grantId, useMemory = true, onStep = () => {} }) {
+  grantId ??= await activeGrantId();
   const taskId = randomUUID().slice(0, 8);
   const steps = [];
   const log = (s) => {

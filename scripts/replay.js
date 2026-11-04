@@ -76,7 +76,7 @@ for (const [i, t] of tasks.entries()) {
       ? (await listReceipts()).filter((x) => x.grantId === process.env.GRANT_ID && x.ask === t.ask && !x.ratings && x.startedAt > out.startedAt).at(-1)
       : null;
   if (orphan) console.log(`adopting paid but unrated receipt ${orphan.taskId}`);
-  const r = orphan ?? (await runTask({ ask: t.ask, useMemory: mode === "on" }));
+  const r = orphan ?? (await runTask({ ask: t.ask, grantId: process.env.GRANT_ID, useMemory: mode === "on" }));
   const ratings = scriptedRatings(r);
   if (r.payments.length) await rateTask(r.taskId, ratings, { wait: true });
   const wasted = r.payments.filter((p) => ratings[p.service] !== "useful").reduce((s, p) => s + p.amount, 0);

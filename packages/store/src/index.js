@@ -37,3 +37,13 @@ export class PgDigestStore {
     await sql()`insert into mpp_digests (digest) values (${digest}) on conflict do nothing`;
   }
 }
+
+export async function getSetting(key) {
+  const rows = await sql()`select value from settings where key = ${key}`;
+  return rows[0]?.value ?? null;
+}
+
+export async function setSetting(key, value) {
+  await sql()`insert into settings (key, value) values (${key}, ${value})
+    on conflict (key) do update set value = excluded.value, updated_at = now()`;
+}

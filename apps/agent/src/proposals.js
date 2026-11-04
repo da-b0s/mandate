@@ -7,6 +7,7 @@ import { readGrant, tatum, PACKAGE_ID } from "@mandate/chain";
 import { SERVICES } from "./catalog.js";
 import { NS, recallValue, rememberWait } from "./memory.js";
 import { listReceipts } from "./stats.js";
+import { activeGrantId } from "./mandate.js";
 
 /** Payee address per service, as last quoted by the vendor (from receipts). */
 async function payees() {
@@ -15,7 +16,8 @@ async function payees() {
   return out;
 }
 
-export async function capProposals(grantId = process.env.GRANT_ID) {
+export async function capProposals(grantId) {
+  grantId ??= await activeGrantId();
   const [grant, payeeOf] = await Promise.all([readGrant(grantId), payees()]);
   const now = Date.now();
   const rows = [];

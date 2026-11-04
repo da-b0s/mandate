@@ -1,13 +1,13 @@
-import { chain } from "@/lib/agent";
+import { agent, chain } from "@/lib/agent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Live grant state, read from Sui mainnet through Tatum gRPC.
+// Live state of the grant the agent spends under, read from Sui mainnet through Tatum gRPC.
 export async function GET() {
-  const { readGrant } = await chain();
-  const g = await readGrant(process.env.GRANT_ID);
+  const a = await agent();
+  const g = await (await chain()).readGrant(await a.activeGrantId());
   const now = Date.now();
   const status = g.revoked ? "revoked" : now >= g.expiresMs ? "expired" : now >= g.lastHeartbeatMs + g.dormancyMs ? "dormant" : "active";
-  return Response.json({ ...g, status, readVia: "tatum-grpc" });
+  return Response.json({ ...g, status, readVia: "tatum-grpc", appOwner: await a.appOwner(), agentAddress: a.agentAddress() });
 }
