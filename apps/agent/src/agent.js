@@ -1,12 +1,12 @@
 // The task loop: classify, plan candidates, decide with policy + recalled value,
 // buy what passes, answer, and leave a receipt.
 import { createHash, randomUUID } from "node:crypto";
-import { decide, rankCandidates } from "@mandate/policy";
+import { applyPreferences, decide, rankCandidates } from "@mandate/policy";
 import { readGrant, screenAddress } from "@mandate/chain";
 import { loadReceipt, saveReceipt } from "@mandate/store";
 import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
-import { NS, recallValue, rememberAsync, rememberRating } from "./memory.js";
+import { NS, recallPreferences, recallValue, rememberAsync, rememberRating } from "./memory.js";
 import { writeAnswer } from "./answer.js";
 import { archiveReport } from "./archive.js";
 import { activeGrantId } from "./mandate.js";
@@ -60,6 +60,10 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
     history[c.service] = v.obs;
     if (v.blobId) receipt.memoriesUsed.push({ service: c.service, blobId: v.blobId, observations: v.obs.length });
   }
+  // Preferences from memory (analyze()); they can only make the agent spend less.
+  const prefs = useMemory ? await recallPreferences().catch(() => []) : [];
+  if (prefs.length) log({ step: "preferences", count: prefs.length });
+
   const ordered = useMemory ? rankCandidates(cands.map((c) => ({ ...c, payee: "" })), (c) => history[c.service], now) : cands;
   receipt.plan = ordered.map((c) => c.service);
   log({ step: "planned", plan: receipt.plan });
@@ -74,6 +78,13 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
       nowMs: now,
       useMemory,
     });
+    const pref = d.action === "pay" ? applyPreferences(c.service, c.price, prefs) : { skip: false };
+    if (pref.skip) {
+      receipt.skipped.push({ service: c.service, reason: "preference", detail: pref.reason });
+      if (pref.fact?.blobId) receipt.memoriesUsed.push({ service: "preferences", blobId: pref.fact.blobId, observations: 1 });
+      log({ step: "skipped", service: c.service, reason: "preference", detail: pref.reason });
+      continue;
+    }
     if (d.action !== "pay") {
       receipt[d.action === "skipped" ? "skipped" : "denied"].push({ service: c.service, reason: d.reason, detail: d.detail });
       log({ step: d.action, service: c.service, reason: d.reason, detail: d.detail });

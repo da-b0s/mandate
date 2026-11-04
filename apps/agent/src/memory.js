@@ -8,6 +8,7 @@ export const NS = {
   spend: "mandate-spend",
   receipts: "mandate-receipts",
   policy: "mandate-policy",
+  prefs: "mandate-prefs",
 };
 
 let client;
@@ -128,4 +129,25 @@ export async function memoryCounts() {
     cursor = page.has_more ? page.next_cursor : undefined;
   } while (cursor);
   return out;
+}
+
+/** Turn a free-text instruction into stored preference facts with Walrus Memory's analyze(). */
+export async function savePreference(text) {
+  const res = await retry(() => memwal().analyze(text, { namespace: NS.prefs }));
+  const facts = res.facts.map((f) => ({ text: f.text, id: f.id, jobId: f.job_id ?? null }));
+  for (const f of facts) freshPrefs.push({ text: f.text, blobId: null, at: Date.now() });
+  return facts;
+}
+
+/** Facts analyze() just extracted, until Walrus has indexed them (about half a minute). */
+const freshPrefs = [];
+
+/** Preference facts, recalled before paying. */
+export async function recallPreferences() {
+  const res = await retry(() =>
+    memwal().recall({ query: "what the user wants or does not want the agent to pay for, and price limits", namespace: NS.prefs, limit: 20, sort: "recent" }),
+  );
+  const recalled = res.results.map((h) => ({ text: h.text, blobId: h.blob_id }));
+  const pending = freshPrefs.filter((p) => Date.now() - p.at < 10 * 60_000 && !recalled.some((r) => r.text === p.text));
+  return [...pending, ...recalled];
 }

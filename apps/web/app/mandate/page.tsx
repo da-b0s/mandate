@@ -1,5 +1,5 @@
 "use client";
-import { ConnectButton, useCurrentAccount, useSignTransaction } from "@mysten/dapp-kit";
+import { ConnectButton, useCurrentAccount, useSignPersonalMessage, useSignTransaction } from "@mysten/dapp-kit";
 import { useEffect, useState } from "react";
 import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
@@ -133,6 +133,8 @@ export default function MandatePage() {
         )}
       </div>
 
+      <Preferences isOwner={Boolean(isOwner)} />
+
       <CreateMandate disabled={!isOwner || busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
 
       <div className="card stack">
@@ -191,6 +193,65 @@ function CreateMandate({ disabled, busy, onCreate }: { disabled: boolean; busy: 
         <button className="primary" disabled={disabled} onClick={() => onCreate(f)}>
           {busy ? "Signing…" : "Create mandate"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Blueprint 8.5 mandate-prefs: free text -> Walrus Memory analyze() -> facts the agent recalls before paying.
+function Preferences({ isOwner }: { isOwner: boolean }) {
+  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+  const [prefs, setPrefs] = useState<any[] | null>(null);
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const load = () => fetch("/api/prefs").then((r) => r.json()).then((j) => setPrefs(j.prefs ?? []));
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function save() {
+    setStatus("Waiting for your wallet…");
+    try {
+      const { signature } = await signPersonalMessage({ message: new TextEncoder().encode(`MANDATE preference:
+${text.trim()}`) });
+      setStatus("Extracting facts with Walrus Memory…");
+      const j = await fetch("/api/prefs", { method: "POST", body: JSON.stringify({ text: text.trim(), signature }) }).then((r) => r.json());
+      if (j.error) throw new Error(j.error);
+      setStatus(`Saved: ${j.facts.map((f: any) => f.text).join(" · ")}`);
+      setText("");
+      load();
+    } catch (e) {
+      setStatus(String((e as Error).message ?? e));
+    }
+  }
+
+  return (
+    <div className="card stack">
+      <h2>Your preferences</h2>
+      <p className="small muted" style={{ margin: 0 }}>
+        Tell the agent what not to buy, or a price it should not exceed. Walrus Memory turns it into facts the agent recalls before every payment.
+        Preferences can only make it spend less; the grant stays the hard limit.
+      </p>
+      {prefs === null ? (
+        <p className="small muted">Recalling…</p>
+      ) : prefs.length === 0 ? (
+        <p className="small muted">No preferences yet.</p>
+      ) : (
+        <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+          {prefs.map((p: any, i: number) => (
+            <li key={i}>
+              {p.text}{" "}
+              {p.blobId ? <a href={walruscan(p.blobId)} target="_blank" className="mono">memory</a> : <span className="muted">(indexing)</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <textarea value={text} placeholder="e.g. Never pay more than 0.03 USDC for a single call" onChange={(e) => setText(e.target.value)} />
+      <div className="row">
+        <button className="primary" disabled={!isOwner || text.trim().length < 5} onClick={save}>
+          Save preference
+        </button>
+        {status && <span className="small muted">{status}</span>}
       </div>
     </div>
   );

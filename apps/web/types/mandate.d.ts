@@ -12,6 +12,8 @@ declare module "@mandate/agent" {
   export function adoptGrant(grantId: string): Promise<any>;
   export function agentAddress(): string;
   export function appOwner(): Promise<string>;
+  export function savePreference(text: string): Promise<any[]>;
+  export function recallPreferences(): Promise<any[]>;
 }
 declare module "@mandate/chain" {
   export function readGrant(grantId: string | undefined): Promise<any>;

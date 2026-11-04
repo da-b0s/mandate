@@ -8,6 +8,7 @@ import {
   proposeCap,
   rankCandidates,
   WEEK_MS,
+  applyPreferences,
   type GrantState,
   type Observation,
 } from "../src/index.ts";
@@ -154,5 +155,26 @@ describe("proposeCap evidence bar", () => {
   });
   it("does not re-propose a block that is already in place", () => {
     expect(proposeCap("0xs", 0, usdc(0.1), usdc(0.05), estimateValue(obs(0, 3), NOW))).toBeNull();
+  });
+});
+
+describe("applyPreferences (tighten-only)", () => {
+  const f = (text: string) => [{ text }];
+  it("skips a service the user said to avoid", () => {
+    expect(applyPreferences("summary", usdc(0.05), f("User never wants to pay for summaries")).skip).toBe(true);
+  });
+  it("leaves other services alone", () => {
+    expect(applyPreferences("wallet-risk", usdc(0.02), f("User never wants to pay for summaries")).skip).toBe(false);
+  });
+  it("applies a general price ceiling", () => {
+    expect(applyPreferences("holders", usdc(0.03), f("Never pay more than 0.025 USDC per call")).skip).toBe(true);
+    expect(applyPreferences("wallet-risk", usdc(0.02), f("Never pay more than 0.025 USDC per call")).skip).toBe(false);
+  });
+  it("a ceiling naming one service only applies to that service", () => {
+    expect(applyPreferences("holders", usdc(0.03), f("Don't spend more than 0.01 on summaries")).skip).toBe(false);
+    expect(applyPreferences("summary", usdc(0.05), f("Don't spend more than 0.01 on summaries")).skip).toBe(true);
+  });
+  it("positive statements never force or loosen anything", () => {
+    expect(applyPreferences("summary", usdc(0.05), f("User likes holder checks")).skip).toBe(false);
   });
 });
