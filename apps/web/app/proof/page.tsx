@@ -54,6 +54,37 @@ export default async function ProofPage() {
         </div>
       )}
 
+      {p.dormancy && (
+        <div className="card stack">
+          <h2>Dead man&apos;s switch, live on mainnet</h2>
+          <p className="small muted" style={{ margin: 0 }}>
+            Grant <a href={suiscanObj(p.dormancy.grantId)} target="_blank" className="mono">{short(p.dormancy.grantId, 10)}</a> with a{" "}
+            {p.dormancy.dormancyMs / 60000}-minute heartbeat window (scripts/dormancy-demo.js).
+          </p>
+          <div className="scroll-x">
+            <table>
+              <thead><tr><th>Time (UTC)</th><th>Event</th><th>Result</th></tr></thead>
+              <tbody>
+                {p.dormancy.log.map((e: any, i: number) => (
+                  <tr key={i}>
+                    <td className="mono">{e.at.slice(11, 19)}</td>
+                    <td>{e.event.replaceAll("-", " ")}</td>
+                    <td className="small">
+                      {e.tx && <a href={suiscanTx(e.tx)} target="_blank" className="mono">{short(e.tx, 8)}</a>}
+                      {e.paid?.map((d: string) => (
+                        <span key={d}><span className="pill ok">paid</span> <a href={suiscanTx(d)} target="_blank" className="mono">{short(d, 8)}</a> </span>
+                      ))}
+                      {e.denied?.map((d: string) => <span key={d} className="pill bad">GRANT_DENIED: {d}</span>)}
+                      {e.waitSeconds && <span className="muted">no heartbeat for {e.waitSeconds}s</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="card stack">
         <h2>Onchain objects</h2>
         <div className="small">

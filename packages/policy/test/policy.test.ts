@@ -146,3 +146,13 @@ describe("proposeCap", () => {
     expect(proposeCap("0xa", usdc(0.1), usdc(0.1), usdc(0.02), estimateValue(obs(1, 1), NOW))).toBeNull();
   });
 });
+
+describe("proposeCap evidence bar", () => {
+  it("proposes blocking as soon as the skip rule would fire (3 useless calls)", () => {
+    const p = proposeCap("0xs", usdc(0.1), usdc(0.1), usdc(0.05), estimateValue(obs(0, 3), NOW));
+    expect(p?.proposedCap).toBe(0);
+  });
+  it("does not re-propose a block that is already in place", () => {
+    expect(proposeCap("0xs", 0, usdc(0.1), usdc(0.05), estimateValue(obs(0, 3), NOW))).toBeNull();
+  });
+});

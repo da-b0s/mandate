@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Nav } from "./nav";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: "MANDATE",
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Nav />
           </div>
         </header>
-        <main className="wrap">{children}</main>
+        <main className="wrap">
+          <Providers>{children}</Providers>
+        </main>
       </body>
     </html>
   );

@@ -19,6 +19,11 @@ export function replayRuns() {
     .map(({ tasks, ...r }) => ({ ...r, taskCount: tasks.length }));
 }
 
+export function dormancyDemo() {
+  const f = path.join(ROOT, "docs/dormancy-demo.json");
+  return existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : null;
+}
+
 export async function proofData() {
   const grantIds = [process.env.GRANT_ID, process.env.REPLAY_GRANT_ID].filter(Boolean);
   const [grants, memories, receipts] = await Promise.all([
@@ -37,6 +42,7 @@ export async function proofData() {
     payments: payments.reverse(),
     valueBlobs: valueBlobs.reverse(),
     replay: replayRuns(),
+    dormancy: dormancyDemo(),
     readVia: "tatum-grpc",
     generatedAt: new Date().toISOString(),
   };

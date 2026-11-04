@@ -8,6 +8,7 @@ import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallValue, rememberAsync, rememberRating } from "./memory.js";
 import { writeAnswer } from "./answer.js";
+import { archiveReport } from "./archive.js";
 
 export { loadReceipt };
 
@@ -78,6 +79,10 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
   receipt.totalSpent = receipt.payments.reduce((s, p) => s + p.amount, 0);
   await saveReceipt(receipt);
 
+  // Full report (every step and vendor output) archived on Walrus via Tatum; the receipt memory cites it.
+  receipt.report = await archiveReport(receipt);
+  if (receipt.report) log({ step: "archived", blobId: receipt.report.blobId });
+
   receipt.memoryJob = await rememberAsync(NS.receipts, "receipt", taskId, {
     ask,
     type: task.type,
@@ -87,6 +92,7 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
     skipped: receipt.skipped,
     denied: receipt.denied,
     outputHash: receipt.outputHash,
+    reportBlob: receipt.report?.blobId ?? null,
   });
   for (const p of receipt.payments) {
     await rememberAsync(NS.spend, "spend", `${p.service}:${taskId}`, { price: p.amount, digest: p.digest, task: taskId, type: task.type });

@@ -7,6 +7,7 @@ export const NS = {
   value: process.env.MEMORY_VALUE_NS ?? "mandate-value",
   spend: "mandate-spend",
   receipts: "mandate-receipts",
+  policy: "mandate-policy",
 };
 
 let client;

@@ -105,6 +105,12 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           Output hash <code>{short(r.outputHash, 12)}</code>
           {r.answerModel ? ` · phrased by ${r.answerModel}` : ""}
         </p>
+        {r.report?.blobId && (
+          <p className="small" style={{ margin: 0 }}>
+            Full report on Walrus (via Tatum Storage):{" "}
+            <a href={walruscan(r.report.blobId)} target="_blank" className="mono">{short(r.report.blobId, 10)}</a>
+          </p>
+        )}
       </Section>
 
       {r.ratings && (

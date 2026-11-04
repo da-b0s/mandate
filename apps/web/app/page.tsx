@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { short, suiscanTx, usdc } from "@/lib/format";
+import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "./grant-bar";
 
 type Step = { step: string; at?: string; [k: string]: any };
@@ -184,6 +184,10 @@ function StepLine({ s }: { s: Step }) {
       return line("⛓", <>Spend recorded on the grant: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
     case "delivery-failed":
       return line("⚠", <>{svc} failed to deliver (HTTP {s.status}); marked refund-worthy</>, "bad");
+    case "archived":
+      return line("🗄", <>Full report archived on Walrus via Tatum Storage: <a href={walruscan(s.blobId)} target="_blank">{short(s.blobId, 8)}</a></>);
+    case "record-failed":
+      return line("⚠", <>Paid, but recording on the grant failed; queued for retry</>, "warn");
     case "answering":
       return line("✍", <>Writing the answer</>);
     case "done":

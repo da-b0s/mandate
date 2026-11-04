@@ -7,7 +7,9 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    "skipLibCheck": true,
+    "types": []
   },
   "include": ["src", "test"]
 }

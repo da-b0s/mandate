@@ -1,0 +1,53 @@
+{
+  "grantId": "0xbdf8516d498cb27d3255a8b21b17caf9c6d5ecb685268e10bb2b88d4617d7077",
+  "dormancyMs": 120000,
+  "log": [
+    {
+      "at": "2026-11-04T20:36:59.192Z",
+      "event": "grant-created",
+      "grantId": "0xbdf8516d498cb27d3255a8b21b17caf9c6d5ecb685268e10bb2b88d4617d7077",
+      "dormancyMinutes": 2,
+      "tx": "41RV6zPvK22rRkY8AfFQ7zdCfWicfokLCeMKVzZMKRxb"
+    },
+    {
+      "at": "2026-11-04T20:38:02.759Z",
+      "event": "task-while-active",
+      "taskId": "971b18c8",
+      "paid": [
+        "8bXF3qwAVEuvEeVAuYFyEqCCdtXUm521sreqnU9kZoKQ"
+      ],
+      "denied": [],
+      "status": "active"
+    },
+    {
+      "at": "2026-11-04T20:38:02.759Z",
+      "event": "owner-goes-quiet",
+      "waitSeconds": 150
+    },
+    {
+      "at": "2026-11-04T20:40:39.347Z",
+      "event": "task-after-silence",
+      "taskId": "b072c0cf",
+      "paid": [],
+      "denied": [
+        "dormant: grant is dormant"
+      ],
+      "status": "dormant"
+    },
+    {
+      "at": "2026-11-04T20:40:42.000Z",
+      "event": "owner-heartbeat",
+      "tx": "E61fPiEGVh4qzwn4qnrqCFjWRRSMW9vrr2fjPZkcjMDc"
+    },
+    {
+      "at": "2026-11-04T20:40:57.312Z",
+      "event": "task-after-heartbeat",
+      "taskId": "786cd30d",
+      "paid": [
+        "33XERtr7sod12gW9xw8UQq3dzof9s9EQ7bvHoPboAZic"
+      ],
+      "denied": [],
+      "status": "active"
+    }
+  ]
+}

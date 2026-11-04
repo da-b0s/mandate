@@ -15,6 +15,7 @@
     "viem": "2.57.16",
     "ai": "7.0.162",
     "@ai-sdk/google": "4.0.111",
-    "@mandate/store": "workspace:*"
+    "@mandate/store": "workspace:*",
+    "@mysten/sui": "2.38.0"
   }
 }
