@@ -164,10 +164,12 @@ function StepLine({ s }: { s: Step }) {
   switch (s.step) {
     case "classified":
       return line("🔎", <>Task: {s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
+    case "free-read":
+      return line("🆓", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
     case "planned":
       return line("🗺", <>Plan: {s.plan.join(" → ") || "nothing to buy"}</>);
     case "skipped":
-      return line("⏭", <>Skipped {svc}: {s.reason.replace("_", " ")} <span className="muted">({s.detail})</span></>, "warn");
+      return line("⏭", <>Skipped {svc}: {s.reason === "free_source" ? "the free check already answers this" : s.reason.replace("_", " ")} <span className="muted">({s.detail})</span></>, "warn");
     case "denied":
       return line("⛔", <>GRANT_DENIED: {s.reason} for {svc} <span className="muted">({s.detail})</span></>, "bad");
     case "buying":

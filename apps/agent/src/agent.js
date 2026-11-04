@@ -2,7 +2,7 @@
 // buy what passes, answer, and leave a receipt.
 import { createHash, randomUUID } from "node:crypto";
 import { decide, rankCandidates } from "@mandate/policy";
-import { readGrant } from "@mandate/chain";
+import { readGrant, screenAddress } from "@mandate/chain";
 import { loadReceipt, saveReceipt } from "@mandate/store";
 import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
@@ -34,6 +34,25 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
 
   const now = Date.now();
   const grant = await readGrant(grantId);
+
+  // Free Tatum read first (blueprint 7.1): a flagged address needs no paid report to answer "don't".
+  let freeSufficient = false;
+  if (task.type === "wallet-risk") {
+    try {
+      const screen = await screenAddress(task.subject);
+      log({ step: "free-read", source: "Tatum security API", flagged: screen.flagged, list: screen.source });
+      if (screen.flagged) {
+        freeSufficient = true;
+        receipt.outputs["tatum-free"] = {
+          ...screen,
+          summary: `Flagged by ${screen.source}: ${screen.description}. Do not transact.`,
+          sources: ["Tatum security API (free)"],
+        };
+      }
+    } catch (e) {
+      log({ step: "free-read-failed", error: String(e.message ?? e).slice(0, 120) });
+    }
+  }
   const cands = SERVICES.filter((s) => s.taskTypes.includes(task.type));
   const history = {};
   for (const c of cands) {
@@ -49,7 +68,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
     // Value decision first. The payee is only known from the live quote, so grant limits are checked there.
     const d = decide({
       grant,
-      candidate: { service: c.service, payee: "*", price: c.price, taskType: task.type },
+      candidate: { service: c.service, payee: "*", price: c.price, taskType: task.type, freeSourceSufficient: freeSufficient },
       history: history[c.service],
       taskValue: TASK_VALUE[task.type],
       nowMs: now,
