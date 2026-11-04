@@ -118,7 +118,11 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           {Object.entries(r.ratings).map(([svc, v]: any) => (
             <div key={svc} className="small">
               {svc}: <strong>{v.rating}</strong> → value memory v{v.version}{" "}
-              <a href={walruscan(v.valueBlob)} target="_blank" className="mono">{short(v.valueBlob, 10)}</a>
+              {v.valueBlob ? (
+                <a href={walruscan(v.valueBlob)} target="_blank" className="mono">{short(v.valueBlob, 10)}</a>
+              ) : (
+                <span className="muted">saving to Walrus…</span>
+              )}
             </div>
           ))}
         </Section>

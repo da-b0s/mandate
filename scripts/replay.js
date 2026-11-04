@@ -78,7 +78,7 @@ for (const [i, t] of tasks.entries()) {
   if (orphan) console.log(`adopting paid but unrated receipt ${orphan.taskId}`);
   const r = orphan ?? (await runTask({ ask: t.ask, useMemory: mode === "on" }));
   const ratings = scriptedRatings(r);
-  if (r.payments.length) await rateTask(r.taskId, ratings);
+  if (r.payments.length) await rateTask(r.taskId, ratings, { wait: true });
   const wasted = r.payments.filter((p) => ratings[p.service] !== "useful").reduce((s, p) => s + p.amount, 0);
   const row = {
     i: i + 1,

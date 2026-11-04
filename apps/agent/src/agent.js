@@ -103,15 +103,29 @@ export async function runTask({ ask, grantId = process.env.GRANT_ID, useMemory =
 }
 
 /** User (or scripted) rating. Each paid service gets its own usefulness verdict. */
-export async function rateTask(taskId, ratings) {
+/**
+ * Rate a task. Returns as soon as the new value versions are known; the Walrus writes finish
+ * in the background and then fill in each rating's valueBlob. Pass { wait: true } to block
+ * until they are stored (the replay does, so its memory links are complete).
+ */
+export async function rateTask(taskId, ratings, { wait = false } = {}) {
   const r = await loadReceipt(taskId);
   if (!r) throw new Error(`no receipt for ${taskId}`);
+  if (r.ratings) return r;
   r.ratings = {};
+  const writes = [];
   for (const p of r.payments) {
     const rating = !p.delivered ? "refund" : (ratings[p.service] ?? ratings.default ?? "useful");
-    const saved = await rememberRating(p.service, r.task.type, rating);
-    r.ratings[p.service] = { rating, valueBlob: saved.blobId, version: saved.v };
+    const { version, saved } = rememberRating(p.service, r.task.type, rating);
+    r.ratings[p.service] = { rating, valueBlob: null, version: await version };
+    writes.push(saved.then((blobId) => [p.service, blobId]));
   }
   await saveReceipt(r);
-  return r;
+  const settle = Promise.allSettled(writes).then(async (results) => {
+    const latest = await loadReceipt(taskId);
+    for (const x of results) if (x.status === "fulfilled") latest.ratings[x.value[0]].valueBlob = x.value[1];
+    await saveReceipt(latest);
+    return latest;
+  });
+  return wait ? settle : r;
 }

@@ -205,7 +205,7 @@ function Rate({ taskId, payments, rated, onRated }: { taskId: string; payments: 
   if (rated) {
     return (
       <div className="row small">
-        <span className="muted">Learned:</span>
+        <span className="muted">Learned (stored on Walrus in the background):</span>
         {Object.entries(rated).map(([svc, v]: any) => (
           <span key={svc} className={`pill ${v.rating === "useful" ? "ok" : "bad"}`}>
             {svc}: {v.rating}
@@ -241,7 +241,7 @@ function Rate({ taskId, payments, rated, onRated }: { taskId: string; payments: 
             if (j.ratings) onRated(j.ratings);
           }}
         >
-          {saving ? "Saving to Walrus Memory…" : "Save rating"}
+          {saving ? "Saving…" : "Save rating"}
         </button>
       </div>
     </div>

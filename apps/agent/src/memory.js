@@ -70,17 +70,41 @@ export async function recallValue(service, taskType) {
     const e = parseEnvelope(hit.text);
     if (e?.kind === "value" && e.key === key && (!best || e.v > best.v)) best = { ...e, blobId: hit.blob_id };
   }
-  return { key, v: best?.v ?? 0, obs: (best?.body.obs ?? []).map(([r, at]) => ({ rating: r, atMs: at })), blobId: best?.blobId ?? null };
+  const fromWalrus = { key, v: best?.v ?? 0, obs: (best?.body.obs ?? []).map(([r, at]) => ({ rating: r, atMs: at })), blobId: best?.blobId ?? null };
+  // A rating written moments ago may not be indexed yet; prefer the newer of Walrus and this process's last write.
+  const local = written.get(key);
+  return local && local.v > fromWalrus.v ? { key, v: local.v, obs: local.obs, blobId: local.blobId, pending: !local.blobId } : fromWalrus;
 }
 
-/** Append a rating; waits so the next task's recall sees it. */
-export async function rememberRating(service, taskType, rating, atMs = Date.now()) {
-  const prev = await recallValue(service, taskType);
-  const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
-  const useful = obs.filter(([r]) => r === "useful").length;
-  const body = { service, taskType, useful, useless: obs.length - useful, obs };
-  const saved = await retry(() => memwal().rememberAndWait(envelope("value", prev.key, prev.v + 1, body), valueNamespace(service, taskType), { timeoutMs: 90_000 }));
-  return { blobId: saved.blob_id, v: prev.v + 1 };
+/** Last value memory this process wrote, per key: covers Walrus indexing lag. Walrus stays the source on restart. */
+const written = new Map();
+/** Per-key write queue, so two quick ratings cannot both build on the same version. */
+const queues = new Map();
+
+/**
+ * Append a rating. Returns at once with the new version; `saved` resolves to the Walrus blob id
+ * once the write is stored and indexed (that wait is what made rating feel slow).
+ */
+export function rememberRating(service, taskType, rating, atMs = Date.now()) {
+  const key = `${service}:${taskType}`;
+  // Only the read-and-bump step is queued; writes run in parallel (recall takes the highest version).
+  const step = (queues.get(key) ?? Promise.resolve()).catch(() => {}).then(async () => {
+    const prev = await recallValue(service, taskType);
+    const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
+    const entry = { v: prev.v + 1, obs: obs.map(([r, at]) => ({ rating: r, atMs: at })), blobId: null };
+    written.set(key, entry);
+    return { entry, obs };
+  });
+  queues.set(key, step);
+  const version = step.then(({ entry }) => entry.v);
+  const saved = step.then(async ({ entry, obs }) => {
+    const useful = obs.filter(([r]) => r === "useful").length;
+    const body = { service, taskType, useful, useless: obs.length - useful, obs };
+    const res = await retry(() => memwal().rememberAndWait(envelope("value", key, entry.v, body), valueNamespace(service, taskType), { timeoutMs: 90_000 }));
+    entry.blobId = res.blob_id;
+    return res.blob_id;
+  });
+  return { version, saved };
 }
 
 /** Fire-and-forget episodic memories (spend, receipt); returns the job id. */
