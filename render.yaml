@@ -31,7 +31,7 @@ services:
     region: frankfurt
     buildCommand: corepack enable && pnpm install --frozen-lockfile --filter "@mandate/web..." && pnpm --filter @mandate/web build
     startCommand: pnpm --filter @mandate/web start
-    healthCheckPath: /api/grant
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "24"
