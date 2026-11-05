@@ -4,7 +4,11 @@ import { ConnectButton, useCurrentAccount, useDisconnectWallet, useSignPersonalM
 import { createContext, useContext, useEffect, useState } from "react";
 import { completeGoogleLogin, googleLoginAvailable, startGoogleLogin, zkSession, zkSignMessage, zkSignOut, zkSignTransaction, type ZkSession } from "./zk";
 
+export type Me = { owner: string | null; agent?: { address: string; grantId: string | null; usdc: number; credited: boolean } | null };
+
 type Owner = {
+  me: Me | null;
+  refreshMe: () => Promise<void>;
   address: string | null;
   kind: "wallet" | "google" | null;
   label: string | null;
@@ -23,6 +27,8 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const { mutate: disconnect } = useDisconnectWallet();
   const [zk, setZk] = useState<ZkSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  const refreshMe = async () => setMe(await fetch("/api/me").then((r) => r.json()).catch(() => ({ owner: null })));
 
   useEffect(() => {
     setZk(zkSession());
@@ -35,6 +41,29 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
       .catch((e) => setError(`Google sign-in failed: ${String(e.message ?? e)}`));
   }, []);
 
+  const address = zk?.address ?? account?.address ?? null;
+  const signMessage = (m: Uint8Array) => (zk ? zkSignMessage(zk, m) : walletSignMsg({ message: m }).then((r) => r.signature));
+
+  // Server session: once per sign-in, prove control of the address by signing a short message.
+  useEffect(() => {
+    refreshMe();
+  }, []);
+  useEffect(() => {
+    if (!address || !me || me.owner === address) return;
+    const issuedAt = new Date().toISOString();
+    const message = `Sign in to MANDATE
+address: ${address}
+issued: ${issuedAt}`;
+    signMessage(new TextEncoder().encode(message))
+      .then((signature) => fetch("/api/auth/login", { method: "POST", body: JSON.stringify({ address, issuedAt, signature }) }))
+      .then((r) => r.json())
+      .then((j) => (j.error ? setError(j.error) : refreshMe()))
+      .catch((e) => setError(String(e.message ?? e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, me?.owner]);
+
+  const endSession = () => fetch("/api/auth/logout", { method: "POST" }).then(refreshMe);
+
   const value: Owner = zk
     ? {
         address: zk.address,
@@ -45,8 +74,11 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
         signOut: () => {
           zkSignOut();
           setZk(null);
+          endSession();
         },
         error,
+        me,
+        refreshMe,
       }
     : {
         address: account?.address ?? null,
@@ -54,8 +86,13 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
         label: account ? "Wallet" : null,
         signTransaction: async (b) => (await walletSignTx({ transaction: b, chain: "sui:mainnet" })).signature,
         signMessage: async (m) => (await walletSignMsg({ message: m })).signature,
-        signOut: () => disconnect(),
+        signOut: () => {
+          disconnect();
+          endSession();
+        },
         error,
+        me,
+        refreshMe,
       };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

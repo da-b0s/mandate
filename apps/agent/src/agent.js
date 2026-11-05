@@ -10,6 +10,7 @@ import { NS, recallPreferences, recallValue, rememberAsync, rememberRating } fro
 import { writeAnswer } from "./answer.js";
 import { archiveReport } from "./archive.js";
 import { activeGrantId } from "./mandate.js";
+import { currentOwner } from "./context.js";
 
 export { loadReceipt };
 
@@ -25,7 +26,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
   const task = classify(ask);
   log({ step: "classified", type: task.type, subject: task.subject });
 
-  const receipt = { taskId, ask, task, useMemory, grantId, plan: [], memoriesUsed: [], payments: [], skipped: [], denied: [], outputs: {}, steps };
+  const receipt = { taskId, owner: currentOwner(), ask, task, useMemory, grantId, plan: [], memoriesUsed: [], payments: [], skipped: [], denied: [], outputs: {}, steps };
   if (task.type === "unknown") {
     receipt.answer = "I need a 0x wallet or token address to work on.";
     await saveReceipt(receipt);
@@ -143,6 +144,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
 export async function rateTask(taskId, ratings, { wait = false } = {}) {
   const r = await loadReceipt(taskId);
   if (!r) throw new Error(`no receipt for ${taskId}`);
+  if ((r.owner ?? null) !== currentOwner()) throw new Error("this task belongs to someone else");
   if (r.ratings) return r;
   r.ratings = {};
   const writes = [];

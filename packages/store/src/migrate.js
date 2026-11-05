@@ -16,4 +16,14 @@ await sql()`create table if not exists settings (
   value text not null,
   updated_at timestamptz not null default now()
 )`;
+await sql()`create table if not exists agents (
+  owner text primary key,
+  agent_address text not null unique,
+  enc_key text not null,
+  grant_id text,
+  credit_digest text,
+  created_at timestamptz not null default now()
+)`;
+await sql()`alter table receipts add column if not exists owner text`;
+await sql()`create index if not exists receipts_owner on receipts (owner, created_at)`;
 console.log("tables ready");

@@ -1,4 +1,5 @@
 import { agent } from "@/lib/agent";
+import { asSessionAgent } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -13,7 +14,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
   const { rateTask } = await agent();
   try {
-    const r = await rateTask(id, ratings);
+    const r = await asSessionAgent(() => rateTask(id, ratings));
     return Response.json({ ratings: r.ratings });
   } catch (e) {
     return Response.json({ error: String((e as Error).message) }, { status: 404 });

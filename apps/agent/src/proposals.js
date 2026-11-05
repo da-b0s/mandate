@@ -12,7 +12,7 @@ import { activeGrantId } from "./mandate.js";
 /** Payee address per service, as last quoted by the vendor (from receipts). */
 async function payees() {
   const out = {};
-  for (const r of await listReceipts()) for (const p of r.payments) out[p.service] = p.payee;
+  for (const r of await listReceipts({ all: true })) for (const p of r.payments) out[p.service] = p.payee;
   return out;
 }
 

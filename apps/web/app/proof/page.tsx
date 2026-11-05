@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { agent } from "@/lib/agent";
+import { asSessionAgent } from "@/lib/session";
 import { short, suiscanObj, suiscanTx, usdc, walruscan } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +9,8 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 // One page of checkable evidence: onchain objects, every payment, every memory, the replay result.
 export default async function ProofPage() {
-  const p = await (await agent()).proofData();
+  const a = await agent();
+  const p = await asSessionAgent(() => a.proofData());
   const off = p.replay.filter((r: any) => r.mode === "off").at(-1);
   const on = p.replay.filter((r: any) => r.mode === "on").at(-1);
   const memTotal = Array.isArray(p.memories) ? p.memories.reduce((s: number, n: any) => s + n.memories, 0) : null;

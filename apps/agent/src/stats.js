@@ -1,11 +1,13 @@
 // Dashboard numbers, computed from receipts. "Wasted" = paid calls later rated useless or refund-worthy.
 import { listReceipts as listAll } from "@mandate/store";
 import { SERVICES } from "./catalog.js";
+import { currentOwner } from "./context.js";
 
 const PRICE = Object.fromEntries(SERVICES.map((s) => [s.service, s.price]));
 
-export async function listReceipts() {
-  return (await listAll()).map((r) => ({ ...r, startedAt: r.steps?.[0]?.at ?? null }));
+/** This agent's receipts: the signed-in user's, or the demo's when nobody is signed in. Pass all=true for everything. */
+export async function listReceipts({ all = false } = {}) {
+  return (await listAll(all ? undefined : currentOwner())).map((r) => ({ ...r, startedAt: r.steps?.[0]?.at ?? null }));
 }
 
 export async function valueStats() {

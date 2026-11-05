@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "./grant-bar";
+import { YourAgent } from "./your-agent";
+import { useOwner } from "@/lib/owner";
 
 type Step = { step: string; at?: string; [k: string]: any };
 type Run = { ask: string; useMemory: boolean; steps: Step[]; receipt?: any; error?: string; ratings?: Record<string, any> };
@@ -19,6 +21,7 @@ export default function AgentPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [busy, setBusy] = useState(false);
   const [grantKey, setGrantKey] = useState(0);
+  const owner = useOwner();
 
   async function submit(text: string) {
     if (!text.trim() || busy) return;
@@ -52,6 +55,7 @@ export default function AgentPage() {
     } finally {
       setBusy(false);
       setGrantKey((k) => k + 1);
+      owner.refreshMe();
     }
   }
 
@@ -63,6 +67,7 @@ export default function AgentPage() {
           It buys data with USDC on Sui, inside limits enforced by your onchain grant, and remembers which services were worth it.
         </p>
       </div>
+      <YourAgent compact />
       <GrantBar refreshKey={grantKey} />
 
       {runs.map((run, i) => (

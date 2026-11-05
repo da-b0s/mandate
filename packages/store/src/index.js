@@ -1,5 +1,6 @@
 // Postgres (Neon) storage: receipts for the app, used payment digests for the vendors.
 import "dotenv/config";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 
 let client;
@@ -12,8 +13,8 @@ export function sql() {
 
 export async function saveReceipt(r) {
   await sql()`
-    insert into receipts (task_id, data, created_at)
-    values (${r.taskId}, ${JSON.stringify(r)}::jsonb, coalesce(${r.steps?.[0]?.at ?? null}::timestamptz, now()))
+    insert into receipts (task_id, data, created_at, owner)
+    values (${r.taskId}, ${JSON.stringify(r)}::jsonb, coalesce(${r.steps?.[0]?.at ?? null}::timestamptz, now()), ${r.owner ?? null})
     on conflict (task_id) do update set data = excluded.data`;
 }
 
@@ -22,8 +23,14 @@ export async function loadReceipt(taskId) {
   return rows[0]?.data ?? null;
 }
 
-export async function listReceipts() {
-  const rows = await sql()`select data from receipts order by created_at asc`;
+/** All receipts, or one user's (owner) or the demo's (owner = null) when `owner` is given. */
+export async function listReceipts(owner) {
+  const rows =
+    owner === undefined
+      ? await sql()`select data from receipts order by created_at asc`
+      : owner === null
+        ? await sql()`select data from receipts where owner is null order by created_at asc`
+        : await sql()`select data from receipts where owner = ${owner} order by created_at asc`;
   return rows.map((r) => r.data);
 }
 
@@ -46,4 +53,50 @@ export async function getSetting(key) {
 export async function setSetting(key, value) {
   await sql()`insert into settings (key, value) values (${key}, ${value})
     on conflict (key) do update set value = excluded.value, updated_at = now()`;
+}
+
+// --- Per-user agent wallets. Keys are encrypted at rest with AGENT_KEY_SECRET (32 bytes, hex). ---
+
+function secretKey() {
+  const k = Buffer.from(process.env.AGENT_KEY_SECRET ?? "", "hex");
+  if (k.length !== 32) throw new Error("AGENT_KEY_SECRET must be 32 bytes of hex");
+  return k;
+}
+
+export function encryptSecret(plain) {
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", secretKey(), iv);
+  const body = Buffer.concat([c.update(plain, "utf8"), c.final()]);
+  return [iv, c.getAuthTag(), body].map((b) => b.toString("base64")).join(".");
+}
+
+export function decryptSecret(enc) {
+  const [iv, tag, body] = enc.split(".").map((p) => Buffer.from(p, "base64"));
+  const d = createDecipheriv("aes-256-gcm", secretKey(), iv);
+  d.setAuthTag(tag);
+  return Buffer.concat([d.update(body), d.final()]).toString("utf8");
+}
+
+export async function getAgentRow(owner) {
+  const rows = await sql()`select owner, agent_address, enc_key, grant_id, credit_digest from agents where owner = ${owner}`;
+  return rows[0] ?? null;
+}
+
+export async function insertAgentRow({ owner, agentAddress, encKey }) {
+  const rows = await sql()`insert into agents (owner, agent_address, enc_key) values (${owner}, ${agentAddress}, ${encKey})
+    on conflict (owner) do nothing returning owner`;
+  return rows.length > 0;
+}
+
+export async function setAgentGrant(owner, grantId) {
+  await sql()`update agents set grant_id = ${grantId} where owner = ${owner}`;
+}
+
+export async function setAgentCredit(owner, digest) {
+  await sql()`update agents set credit_digest = ${digest} where owner = ${owner}`;
+}
+
+export async function countCredited() {
+  const rows = await sql()`select count(*)::int as n from agents where credit_digest is not null`;
+  return rows[0].n;
 }

@@ -5,3 +5,5 @@ export { proofData, replayRuns } from "./proof.js";
 export { capProposals, recordRatification } from "./proposals.js";
 export { activeGrantId, adoptGrant, agentAddress, appOwner } from "./mandate.js";
 export { recallPreferences, savePreference } from "./memory.js";
+export { asUser, createUserAgent, getUserAgent, setUserGrant, userMemoryPrefix } from "./users.js";
+export { withAgent } from "./context.js";

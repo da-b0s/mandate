@@ -27,12 +27,15 @@ async function retry(fn, attempts = 4) {
  * identical signed transaction cannot execute twice, so network errors are safe to retry.
  * Throws if the transaction itself fails. Returns { digest, effects, objectTypes }.
  */
-export async function execute(tx, signer) {
+export async function execute(tx, signer, { sponsor } = {}) {
   tx.setSenderIfNotSet(signer.toSuiAddress());
+  // Sponsored: another key pays gas, so a user's agent only ever needs USDC.
+  if (sponsor) tx.setGasOwner(sponsor.toSuiAddress());
   const bytes = await retry(() => tx.build({ client: fullnode }));
-  const { signature } = await signer.signTransaction(bytes);
+  const signatures = [(await signer.signTransaction(bytes)).signature];
+  if (sponsor) signatures.push((await sponsor.signTransaction(bytes)).signature);
   const res = await retry(() =>
-    fullnode.executeTransaction({ transaction: bytes, signatures: [signature], include: { effects: true, objectTypes: true, events: true } }),
+    fullnode.executeTransaction({ transaction: bytes, signatures, include: { effects: true, objectTypes: true, events: true } }),
   );
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error(`tx ${t.digest} failed: ${JSON.stringify(t.effects.status.error)}`);

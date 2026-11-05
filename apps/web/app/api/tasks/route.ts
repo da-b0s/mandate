@@ -1,5 +1,6 @@
 import { agent } from "@/lib/agent";
 import { allowTask } from "@/lib/limit";
+import { runAs, sessionOwner } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -12,13 +13,14 @@ export async function POST(req: Request) {
   }
   const gate = allowTask(req);
   if (!gate.ok) return Response.json({ error: gate.error }, { status: 429 });
+  const owner = await sessionOwner();
   const { runTask } = await agent();
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       const send = (o: unknown) => controller.enqueue(enc.encode(JSON.stringify(o) + "\n"));
       try {
-        const receipt = await runTask({ ask, useMemory: Boolean(useMemory), onStep: (s: unknown) => send({ step: s }) });
+        const receipt = await runAs(owner, () => runTask({ ask, useMemory: Boolean(useMemory), onStep: (s: unknown) => send({ step: s }) }));
         const { steps, ...rest } = receipt;
         send({ receipt: rest });
       } catch (e) {

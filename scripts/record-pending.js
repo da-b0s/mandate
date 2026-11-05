@@ -28,7 +28,7 @@ const [grantId, digest] = process.argv.slice(2);
 if (grantId && digest) {
   await record(grantId, digest);
 } else {
-  for (const r of await listReceipts()) {
+  for (const r of await listReceipts({ all: true })) {
     let changed = false;
     for (const p of r.payments.filter((p) => p.recordError && !p.recordDigest)) {
       p.recordDigest = await record(r.grantId, p.digest);

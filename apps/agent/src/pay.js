@@ -3,7 +3,8 @@
 import { Mppx } from "mppx/client";
 import { USDC, sui } from "@suimpp/mpp/client";
 import { checkGrant } from "@mandate/policy";
-import { agentSigner, execute, fullnode, readGrant, recordSpendTx, tatum } from "@mandate/chain";
+import { execute, fullnode, readGrant, recordSpendTx, tatum } from "@mandate/chain";
+import { currentSigner, currentSponsor } from "./context.js";
 
 export class GrantDenied extends Error {
   constructor(reason, detail) {
@@ -13,16 +14,18 @@ export class GrantDenied extends Error {
   }
 }
 
-const signer = agentSigner();
 const toBase = (decimal) => Math.round(Number(decimal) * 1e6);
 
 /** Returns { status, body, payment }, or throws GrantDenied before any money moves. */
 export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
+  const signer = currentSigner();
+  const sponsor = currentSponsor();
+  const send = (tx) => execute(tx, signer, { sponsor });
   let quote;
   const mppx = Mppx.create({
     polyfill: false,
     // Payments go through the same sign-once, resend-on-network-error path as every other tx.
-    methods: [sui({ client: fullnode, signer, currency: USDC, execute: (tx) => execute(tx, signer) })],
+    methods: [sui({ client: fullnode, signer, currency: USDC, execute: send })],
     async onChallenge(challenge, { createCredential }) {
       const r = challenge.request;
       quote = { amount: toBase(r.amount), recipient: r.recipient, currency: r.currency };
@@ -45,12 +48,12 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
 
   const digest = JSON.parse(Buffer.from(receipt, "base64url").toString()).reference;
   log?.({ step: "paid", digest });
-  const payment = await verifyPayment(digest, quote);
+  const payment = await verifyPayment(digest, quote, signer.toSuiAddress());
   log?.({ step: "verified", ...payment });
 
   // The money has moved: a failure here must not lose the receipt. Flag it for scripts/record-pending.js.
   try {
-    const rec = await execute(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }), signer);
+    const rec = await send(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }));
     payment.recordDigest = rec.digest;
     log?.({ step: "recorded", digest: rec.digest });
   } catch (e) {
@@ -61,11 +64,11 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
 }
 
 /** Independent check via Tatum gRPC: succeeded, sent by the agent, right amount to the right payee. */
-export async function verifyPayment(digest, quote) {
+export async function verifyPayment(digest, quote, agentAddress) {
   const tx = await tatum.waitForTransaction({ digest, include: { balanceChanges: true, effects: true, transaction: true } });
   const t = tx.Transaction ?? tx.FailedTransaction;
   const received = t.balanceChanges.find((b) => b.address === quote.recipient && b.coinType === quote.currency);
-  const ok = t.effects.status.success && t.transaction.sender === signer.toSuiAddress() && Number(received?.amount) === quote.amount;
+  const ok = t.effects.status.success && t.transaction.sender === agentAddress && Number(received?.amount) === quote.amount;
   if (!ok) throw new Error(`payment ${digest} failed Tatum verification`);
   return { digest, amount: quote.amount, payee: quote.recipient, verifiedVia: "tatum-grpc" };
 }

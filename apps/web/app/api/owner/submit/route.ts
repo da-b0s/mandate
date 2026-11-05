@@ -1,4 +1,5 @@
 import { agent, chain } from "@/lib/agent";
+import { asSessionAgent, sessionOwner } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -6,7 +7,12 @@ export const maxDuration = 120;
 // Submits the owner-signed transaction. A cap change then gets a policy memory citing the digest
 // (onchain first, memory second); a new grant becomes the one the agent spends under.
 export async function POST(req: Request) {
-  const { bytes, signature, action } = await req.json();
+  const body = await req.json();
+  const owner = await sessionOwner();
+  return asSessionAgent(() => submit(body, owner), { setup: true });
+}
+
+async function submit({ bytes, signature, action }: any, owner: string | null) {
   if (typeof bytes !== "string" || typeof signature !== "string") return Response.json({ error: "bad request" }, { status: 400 });
   try {
     const [a, c] = await Promise.all([agent(), chain()]);
@@ -16,7 +22,9 @@ export async function POST(req: Request) {
     if (action === "create") {
       const grantId = Object.entries(t.objectTypes ?? {}).find(([, ty]) => String(ty).endsWith("::grant::Grant"))?.[0];
       if (!grantId) throw new Error("no Grant created in this transaction");
-      await a.adoptGrant(grantId);
+      // A signed-in user's new grant becomes theirs; the demo owner adopts it for the demo agent.
+      if (owner && (await a.getUserAgent(owner))) await a.setUserGrant(owner, grantId);
+      else await a.adoptGrant(grantId);
       out.grantId = grantId;
     }
     return Response.json(out);

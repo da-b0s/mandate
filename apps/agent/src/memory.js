@@ -2,14 +2,22 @@
 // Envelopes: [mdt1|<kind>|<key>|v<n>] <json>
 import "dotenv/config";
 import { MemWal } from "@mysten-incubation/memwal";
+import { memoryPrefix } from "./context.js";
 
-export const NS = {
-  value: process.env.MEMORY_VALUE_NS ?? "mandate-value",
-  spend: "mandate-spend",
-  receipts: "mandate-receipts",
-  policy: "mandate-policy",
-  prefs: "mandate-prefs",
+// Namespaces are per agent: each signed-in user's agent gets its own prefix, so one person's
+// learning never mixes with another's. The demo agent keeps the original "mandate-*" names.
+const ns = (kind) => {
+  const prefix = memoryPrefix();
+  if (kind === "value" && prefix === "mandate") return process.env.MEMORY_VALUE_NS ?? "mandate-value";
+  return `${prefix}-${kind}`;
 };
+export const NS = Object.defineProperties({}, {
+  value: { get: () => ns("value"), enumerable: true },
+  spend: { get: () => ns("spend"), enumerable: true },
+  receipts: { get: () => ns("receipts"), enumerable: true },
+  policy: { get: () => ns("policy"), enumerable: true },
+  prefs: { get: () => ns("prefs"), enumerable: true },
+});
 
 let client;
 function memwal() {
@@ -17,7 +25,7 @@ function memwal() {
     key: process.env.MEMWAL_PRIVATE_KEY,
     accountId: process.env.MEMWAL_ACCOUNT_ID,
     serverUrl: process.env.MEMWAL_SERVER_URL,
-    namespace: NS.value,
+    namespace: "mandate-value",
   });
   return client;
 }
@@ -73,7 +81,7 @@ export async function recallValue(service, taskType) {
   }
   const fromWalrus = { key, v: best?.v ?? 0, obs: (best?.body.obs ?? []).map(([r, at]) => ({ rating: r, atMs: at })), blobId: best?.blobId ?? null };
   // A rating written moments ago may not be indexed yet; prefer the newer of Walrus and this process's last write.
-  const local = written.get(key);
+  const local = written.get(ns);
   return local && local.v > fromWalrus.v ? { key, v: local.v, obs: local.obs, blobId: local.blobId, pending: !local.blobId } : fromWalrus;
 }
 
@@ -88,20 +96,21 @@ const queues = new Map();
  */
 export function rememberRating(service, taskType, rating, atMs = Date.now()) {
   const key = `${service}:${taskType}`;
+  const vns = valueNamespace(service, taskType);
   // Only the read-and-bump step is queued; writes run in parallel (recall takes the highest version).
-  const step = (queues.get(key) ?? Promise.resolve()).catch(() => {}).then(async () => {
+  const step = (queues.get(vns) ?? Promise.resolve()).catch(() => {}).then(async () => {
     const prev = await recallValue(service, taskType);
     const obs = [...prev.obs.map((o) => [o.rating, o.atMs]), [rating, atMs]].slice(-MAX_OBS);
     const entry = { v: prev.v + 1, obs: obs.map(([r, at]) => ({ rating: r, atMs: at })), blobId: null };
-    written.set(key, entry);
+    written.set(vns, entry);
     return { entry, obs };
   });
-  queues.set(key, step);
+  queues.set(vns, step);
   const version = step.then(({ entry }) => entry.v);
   const saved = step.then(async ({ entry, obs }) => {
     const useful = obs.filter(([r]) => r === "useful").length;
     const body = { service, taskType, useful, useless: obs.length - useful, obs };
-    const res = await retry(() => memwal().rememberAndWait(envelope("value", key, entry.v, body), valueNamespace(service, taskType), { timeoutMs: 90_000 }));
+    const res = await retry(() => memwal().rememberAndWait(envelope("value", key, entry.v, body), vns, { timeoutMs: 90_000 }));
     entry.blobId = res.blob_id;
     return res.blob_id;
   });
@@ -135,7 +144,7 @@ export async function memoryCounts() {
 export async function savePreference(text) {
   const res = await retry(() => memwal().analyze(text, { namespace: NS.prefs }));
   const facts = res.facts.map((f) => ({ text: f.text, id: f.id, jobId: f.job_id ?? null }));
-  for (const f of facts) freshPrefs.push({ text: f.text, blobId: null, at: Date.now() });
+  for (const f of facts) freshPrefs.push({ ns: NS.prefs, text: f.text, blobId: null, at: Date.now() });
   return facts;
 }
 
@@ -148,6 +157,6 @@ export async function recallPreferences() {
     memwal().recall({ query: "what the user wants or does not want the agent to pay for, and price limits", namespace: NS.prefs, limit: 20, sort: "recent" }),
   );
   const recalled = res.results.map((h) => ({ text: h.text, blobId: h.blob_id }));
-  const pending = freshPrefs.filter((p) => Date.now() - p.at < 10 * 60_000 && !recalled.some((r) => r.text === p.text));
+  const pending = freshPrefs.filter((p) => p.ns === NS.prefs && Date.now() - p.at < 10 * 60_000 && !recalled.some((r) => r.text === p.text));
   return [...pending, ...recalled];
 }

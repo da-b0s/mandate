@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { agent } from "@/lib/agent";
+import { sessionOwner } from "@/lib/session";
 import { short, suiscanObj, suiscanTx, usdc, walruscan } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   if (!/^[0-9a-f]{8}$/.test(id)) notFound();
   const r = await (await agent()).loadReceipt(id);
-  if (!r) notFound();
+  if (!r || (r.owner && r.owner !== (await sessionOwner()))) notFound();
 
   return (
     <div className="stack">

@@ -1,8 +1,10 @@
 import { agent } from "@/lib/agent";
+import { asSessionAgent } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return Response.json(await (await agent()).valueStats());
+  const a = await agent();
+  return Response.json(await asSessionAgent(() => a.valueStats()));
 }

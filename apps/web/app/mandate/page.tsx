@@ -1,8 +1,9 @@
 "use client";
-import { SignIn, useOwner } from "@/lib/owner";
+import { useOwner } from "@/lib/owner";
 import { useEffect, useState } from "react";
 import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
+import { YourAgent } from "../your-agent";
 
 type Result = { ok: boolean; text: string; digest?: string; memoryBlob?: string };
 
@@ -20,6 +21,8 @@ export default function MandatePage() {
   }, [refresh]);
 
   const isOwner = account && data && account.address === data.owner;
+  // Signed in with an agent but no mandate yet: they may create their first one.
+  const needsMandate = Boolean(owner.me?.agent && !owner.me.agent.grantId);
 
   async function act(key: string, body: Record<string, unknown>) {
     if (!account) return;
@@ -33,6 +36,7 @@ export default function MandatePage() {
       if (sent.error) throw new Error(sent.error);
       setResult({ ok: true, text: `${body.action} confirmed onchain`, digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
       setRefresh((n) => n + 1);
+      await owner.refreshMe();
     } catch (e) {
       setResult({ ok: false, text: String((e as Error).message ?? e) });
     } finally {
@@ -50,18 +54,14 @@ export default function MandatePage() {
       </div>
       <GrantBar refreshKey={refresh} />
 
-      <div className="card row" style={{ justifyContent: "space-between" }}>
-        <div className="small">
-          {!account && <span className="muted">Sign in as the owner to approve changes.</span>}
-          {account && isOwner && <span className="pill ok">Connected as owner</span>}
-          {account && data && !isOwner && (
-            <span className="pill warn">
-              Connected wallet {short(account.address)} is not the owner ({short(data.owner)}). You can look, but not sign.
-            </span>
-          )}
+      <YourAgent />
+      {account && data && !isOwner && !owner.me?.agent && (
+        <div className="card small">
+          <span className="pill warn">
+            Signed in as {short(account.address)}. This page shows the demo mandate, owned by {short(data.owner)}; create your own agent above.
+          </span>
         </div>
-        <SignIn />
-      </div>
+      )}
 
       {result && (
         <div className={`card small ${result.ok ? "" : ""}`}>
@@ -135,7 +135,7 @@ export default function MandatePage() {
 
       <Preferences isOwner={Boolean(isOwner)} />
 
-      <CreateMandate disabled={!isOwner || busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+      <CreateMandate disabled={!(isOwner || needsMandate) || busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
 
       <div className="card stack">
         <h2>Dead man&apos;s switch</h2>

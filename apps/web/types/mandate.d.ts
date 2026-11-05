@@ -13,6 +13,10 @@ declare module "@mandate/agent" {
   export function agentAddress(): string;
   export function appOwner(): Promise<string>;
   export function savePreference(text: string): Promise<any[]>;
+  export function getUserAgent(owner: string): Promise<{ owner: string; agentAddress: string; grantId: string | null; credited: boolean } | null>;
+  export function createUserAgent(owner: string): Promise<any>;
+  export function setUserGrant(owner: string, grantId: string): Promise<any>;
+  export function asUser<T>(owner: string, fn: () => Promise<T>, o?: { setup?: boolean }): Promise<T>;
   export function recallPreferences(): Promise<any[]>;
 }
 declare module "@mandate/chain" {
@@ -27,4 +31,5 @@ declare module "@mandate/chain" {
   export function currentEpoch(): Promise<number>;
   export function zkLogin(o: { jwt: string; maxEpoch: number; extendedEphemeralPublicKey: string; randomness: string }): Promise<any>;
   export const fullnode: any;
+  export const tatum: any;
 }
