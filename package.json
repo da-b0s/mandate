@@ -24,5 +24,8 @@
     "@mandate/agent": "workspace:*",
     "@mandate/policy": "workspace:*",
     "@mandate/store": "workspace:*"
+  },
+  "devDependencies": {
+    "@mysten-incubation/memwal-mcp": "0.1.0"
   }
 }

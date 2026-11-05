@@ -2,13 +2,14 @@
 
 MANDATE's agent writes everything it learns to Walrus Memory: receipts, payments, what each vendor
 was worth, and the limits you approved. The same memory is readable from any MCP client. This repo
-ships a `.mcp.json` that adds the official Walrus Memory MCP server (`@mysten-incubation/memwal-mcp`,
-pinned to 0.1.0) to Claude Code when you open this folder. Auto-save is off, so it only reads unless
-you ask it to remember something.
+ships a `.mcp.json` that adds the official Walrus Memory MCP server (`@mysten-incubation/memwal-mcp`
+0.1.0, installed as a dev dependency by `pnpm install`) to Claude Code when you open this folder. It
+runs with plain `node` (starts in under a second on Windows, macOS and Linux). Auto-save is off, so it
+only reads unless you ask it to remember something.
 
 ## Set up (once)
 
-1. Open this folder in Claude Code and approve the `memwal` MCP server when asked.
+1. Run `pnpm install`, then open this folder in Claude Code and approve the `memwal` MCP server.
 2. Ask Claude to run `memwal_login`. A browser page opens; sign in with the wallet that owns the
    Walrus Memory account the agent writes to.
 
