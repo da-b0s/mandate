@@ -25,4 +25,8 @@ only reads unless you ask it to remember something.
 A signed-in user's own agent uses namespaces prefixed `mandate-u<first 12 hex of their address>`,
 for example `mandate-u0520a2fd4bee-receipts`.
 
+Receipt and spend memories written from 6 November carry `at` (ISO time), `currency`, and amounts in
+USDC (`usdc`, `totalUsdc`) as well as base units, so answers can say "when" and "how much" without
+guessing. Search ranks by relevance; ask for "the most recent" and Claude can sort by `at`.
+
 Every answer carries the Walrus blob IDs, so you can check it against the receipts and the Proof page.

@@ -123,19 +123,28 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
   receipt.report = await archiveReport(receipt);
   if (receipt.report) log({ step: "archived", blobId: receipt.report.blobId });
 
+  // Memories are read by other tools too (e.g. Claude Code via the Walrus Memory MCP), so they carry
+  // the date and human-readable amounts, not just base units.
+  const at = new Date().toISOString();
+  const usd = (base) => (base / 1e6).toFixed(2);
   receipt.memoryJob = await rememberAsync(NS.receipts, "receipt", taskId, {
+    at,
     ask,
     type: task.type,
     plan: receipt.plan,
     memories: receipt.memoriesUsed.map((m) => m.blobId),
-    payments: receipt.payments.map((p) => ({ service: p.service, amount: p.amount, digest: p.digest })),
+    currency: "USDC",
+    totalUsdc: usd(receipt.totalSpent),
+    payments: receipt.payments.map((p) => ({ service: p.service, usdc: usd(p.amount), amount: p.amount, digest: p.digest })),
     skipped: receipt.skipped,
     denied: receipt.denied,
+    answer: receipt.answer?.slice(0, 280),
     outputHash: receipt.outputHash,
     reportBlob: receipt.report?.blobId ?? null,
+    grant: grantId,
   });
   for (const p of receipt.payments) {
-    await rememberAsync(NS.spend, "spend", `${p.service}:${taskId}`, { price: p.amount, digest: p.digest, task: taskId, type: task.type });
+    await rememberAsync(NS.spend, "spend", `${p.service}:${taskId}`, { at, usdc: usd(p.amount), price: p.amount, digest: p.digest, task: taskId, type: task.type });
   }
   log({ step: "done", totalSpent: receipt.totalSpent });
   await saveReceipt(receipt);
