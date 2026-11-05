@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "memwal": {
+      "command": "npx",
+      "args": ["-y", "@mysten-incubation/memwal-mcp@0.1.0", "--namespace", "mandate-receipts", "--label", "MANDATE Claude Code"],
+      "env": { "MEMWAL_AUTO_SAVE": "0" }
+    }
+  }
+}
