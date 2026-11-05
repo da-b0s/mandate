@@ -1,5 +1,5 @@
 import { verifyPersonalMessageSignature } from "@mysten/sui/verify";
-import { agent } from "@/lib/agent";
+import { agent, chain } from "@/lib/agent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +18,8 @@ export async function POST(req: Request) {
   // Only the owner may teach the agent preferences: they sign the exact text with their wallet (no gas).
   const a = await agent();
   try {
-    const signer = await verifyPersonalMessageSignature(new TextEncoder().encode(prefMessage(text)), signature);
+    // zkLogin (Google) signatures are checked against onchain state, so pass a client.
+    const signer = await verifyPersonalMessageSignature(new TextEncoder().encode(prefMessage(text)), signature, { client: (await chain()).fullnode });
     if (signer.toSuiAddress() !== (await a.appOwner())) throw new Error("not the owner");
   } catch {
     return Response.json({ error: "Sign with the wallet that owns this mandate." }, { status: 403 });

@@ -23,4 +23,5 @@ declare module "@mandate/chain" {
   export function createGrantTx(o: { agent: string; weeklyBudget: number; perCallCap: number; expiresMs: number; dormancyMs: number }): any;
   export function buildFor(tx: any, sender: string): Promise<string>;
   export function submitSigned(bytes: string, signature: string): Promise<any>;
+  export const fullnode: any;
 }
