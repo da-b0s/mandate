@@ -7,11 +7,6 @@ export const dynamic = "force-dynamic";
 // rate limiter sees it (useful behind the Vercel front door; it only ever shows you yourself).
 export function GET(req: Request) {
   const body: Record<string, unknown> = { ok: true, at: new Date().toISOString() };
-  if (new URL(req.url).searchParams.has("ip")) {
-    body.ip = clientIp(req);
-    body.chain = req.headers.get("x-forwarded-for");
-    body.vercel = req.headers.get("x-vercel-forwarded-for");
-    body.real = req.headers.get("x-real-ip");
-  }
+  if (new URL(req.url).searchParams.has("ip")) body.ip = clientIp(req);
   return Response.json(body);
 }

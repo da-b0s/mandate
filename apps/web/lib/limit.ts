@@ -19,7 +19,16 @@ export function allowTask(req: Request): { ok: true } | { ok: false; error: stri
   return { ok: true };
 }
 
-/** The visitor's address: first hop of x-forwarded-for (the Vercel front door and Render both forward it). */
+/**
+ * The visitor's address. The first x-forwarded-for entry is whatever the client sent, so it can be
+ * faked. Render appends its own two hops (Cloudflare, internal), so the entry before them is the real
+ * peer; behind the Vercel front door that peer is Vercel, which passes the visitor in
+ * x-vercel-forwarded-for. Forging that header means bypassing Vercel, and the app-wide daily cap
+ * and each grant's onchain budget still bound what that could cost.
+ */
 export function clientIp(req: Request) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const viaVercel = req.headers.get("x-vercel-forwarded-for")?.split(",")[0].trim();
+  if (viaVercel) return viaVercel;
+  const chain = (req.headers.get("x-forwarded-for") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return chain.at(-3) ?? chain.at(-1) ?? "local";
 }
