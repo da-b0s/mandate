@@ -31,7 +31,21 @@ export function OwnerProvider({ children }: { children: React.ReactNode }) {
   const refreshMe = async () => setMe(await fetch("/api/me").then((r) => r.json()).catch(() => ({ owner: null })));
 
   useEffect(() => {
-    setZk(zkSession());
+    // A zkLogin proof is valid until its maxEpoch (about two days); after that, sign in again.
+    const existing = zkSession();
+    setZk(existing);
+    if (existing) {
+      fetch("/api/zk/epoch")
+        .then((r) => r.json())
+        .then(({ epoch }) => {
+          if (Number(epoch) >= existing.maxEpoch) {
+            zkSignOut();
+            setZk(null);
+            setError("Your Google sign-in expired. Please sign in again.");
+          }
+        })
+        .catch(() => {});
+    }
     completeGoogleLogin()
       .then((returnTo) => {
         if (!returnTo) return;

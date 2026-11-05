@@ -59,6 +59,7 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
   } catch (e) {
     payment.recordError = String(e.message ?? e).slice(0, 300);
     log?.({ step: "record-failed", digest, error: payment.recordError });
+    payment.retryRecord = () => send(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }));
   }
   return { status: res.status, body, payment };
 }
