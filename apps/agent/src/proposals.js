@@ -4,45 +4,37 @@
 import { bcs } from "@mysten/sui/bcs";
 import { estimateValue, proposeCap } from "@mandate/policy";
 import { readGrant, tatum, PACKAGE_ID } from "@mandate/chain";
+import { latestPayees } from "@mandate/store";
 import { SERVICES } from "./catalog.js";
 import { NS, recallValue, rememberWait } from "./memory.js";
-import { listReceipts } from "./stats.js";
 import { activeGrantId } from "./mandate.js";
-
-/** Payee address per service, as last quoted by the vendor (from receipts). */
-async function payees() {
-  const out = {};
-  for (const r of await listReceipts({ all: true })) for (const p of r.payments) out[p.service] = p.payee;
-  return out;
-}
 
 export async function capProposals(grantId) {
   grantId ??= await activeGrantId();
-  const [grant, payeeOf] = await Promise.all([readGrant(grantId), payees()]);
+  const [grant, payeeOf] = await Promise.all([readGrant(grantId), latestPayees()]);
   const now = Date.now();
+  // One Walrus recall per (service, task type), all at once.
+  const pairs = SERVICES.flatMap((s) => (payeeOf[s.service] ? s.taskTypes.map((taskType) => [s, taskType]) : []));
+  const mems = await Promise.all(pairs.map(([s, taskType]) => recallValue(s.service, taskType)));
   const rows = [];
-  for (const s of SERVICES) {
+  for (const [i, [s, taskType]] of pairs.entries()) {
     const payee = payeeOf[s.service];
-    if (!payee) continue;
-    for (const taskType of s.taskTypes) {
-      const mem = await recallValue(s.service, taskType);
-      const v = estimateValue(mem.obs, now);
-      const currentCap = Math.min(grant.serviceCaps[payee] ?? grant.perCallCap, grant.perCallCap);
-      const p = proposeCap(payee, currentCap, grant.perCallCap, s.price, v);
-      rows.push({
-        service: s.service,
-        name: s.name,
-        taskType,
-        payee,
-        price: s.price,
-        currentCap,
-        observations: v.n,
-        pUseful: v.pUseful,
-        lcb: v.lcb,
-        memoryBlob: mem.blobId,
-        proposal: p,
-      });
-    }
+    const mem = mems[i];
+    const v = estimateValue(mem.obs, now);
+    const currentCap = Math.min(grant.serviceCaps[payee] ?? grant.perCallCap, grant.perCallCap);
+    rows.push({
+      service: s.service,
+      name: s.name,
+      taskType,
+      payee,
+      price: s.price,
+      currentCap,
+      observations: v.n,
+      pUseful: v.pUseful,
+      lcb: v.lcb,
+      memoryBlob: mem.blobId,
+      proposal: proposeCap(payee, currentCap, grant.perCallCap, s.price, v),
+    });
   }
   return { grantId, owner: grant.owner, packageId: PACKAGE_ID, perCallCap: grant.perCallCap, rows };
 }

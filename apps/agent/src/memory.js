@@ -70,10 +70,17 @@ export const valueNamespace = (service, taskType) => `${NS.value}-${service}-${t
  * Latest value memory for (service, task type): its observations and the blob that holds them.
  * We keep only exact-key matches and take the highest version.
  */
+const recallCache = new Map(); // namespace -> { at, res }: page loads within 30s reuse one Walrus recall
+
 export async function recallValue(service, taskType) {
   const key = `${service}:${taskType}`;
   const ns = valueNamespace(service, taskType);
-  const res = await retry(() => memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: ns, limit: 5, sort: "recent" }));
+  const hit = recallCache.get(ns);
+  const res =
+    hit && Date.now() - hit.at < 30_000
+      ? hit.res
+      : await retry(() => memwal().recall({ query: `value of ${service} for ${taskType} tasks`, namespace: ns, limit: 5, sort: "recent" }));
+  if (res !== hit?.res) recallCache.set(ns, { at: Date.now(), res });
   let best = null;
   for (const hit of res.results) {
     const e = parseEnvelope(hit.text);
@@ -129,7 +136,10 @@ export async function rememberWait(ns, kind, key, body) {
 }
 
 /** Memory counts per namespace, straight from the relayer (for the Proof page). */
+let countsCache = { at: 0, value: null };
 export async function memoryCounts() {
+  // Listing every namespace is slow (one relayer page per ~50); a minute-old count is fine for the Proof page.
+  if (countsCache.value && Date.now() - countsCache.at < 60_000) return countsCache.value;
   const out = [];
   let cursor;
   do {
@@ -137,6 +147,7 @@ export async function memoryCounts() {
     out.push(...page.namespaces.map((n) => ({ name: n.name, memories: n.memory_count, bytes: n.storage_used })));
     cursor = page.has_more ? page.next_cursor : undefined;
   } while (cursor);
+  countsCache = { at: Date.now(), value: out };
   return out;
 }
 

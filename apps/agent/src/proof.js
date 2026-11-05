@@ -10,7 +10,13 @@ import { activeGrantId } from "./mandate.js";
 // Bundlers may drop import.meta.dirname; the web app passes the repo root explicitly.
 const ROOT = process.env.MANDATE_ROOT ?? path.resolve(import.meta.dirname, "../../..");
 
+// Replay and dormancy results are files committed with the code: read them once per process.
+let runsCache = null;
 export function replayRuns() {
+  return (runsCache ??= readReplayRuns());
+}
+
+function readReplayRuns() {
   const dir = path.join(ROOT, "docs/replay");
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
@@ -20,9 +26,13 @@ export function replayRuns() {
     .map(({ tasks, ...r }) => ({ ...r, taskCount: tasks.length }));
 }
 
+let dormancyCache;
 export function dormancyDemo() {
-  const f = path.join(ROOT, "docs/dormancy-demo.json");
-  return existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : null;
+  if (dormancyCache === undefined) {
+    const f = path.join(ROOT, "docs/dormancy-demo.json");
+    dormancyCache = existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : null;
+  }
+  return dormancyCache;
 }
 
 export async function proofData() {
@@ -30,7 +40,7 @@ export async function proofData() {
   const [grants, memories, receipts] = await Promise.all([
     Promise.all(grantIds.map((id) => readGrant(id).catch((e) => ({ id, error: String(e.message) })))),
     memoryCounts().catch((e) => ({ error: String(e.message) })),
-    listReceipts(),
+    listReceipts({ light: true }),
   ]);
   const payments = receipts.flatMap((r) =>
     r.payments.map((p) => ({ taskId: r.taskId, at: r.startedAt, service: p.service, amount: p.amount, digest: p.digest, recordDigest: p.recordDigest, verifiedVia: p.verifiedVia })),

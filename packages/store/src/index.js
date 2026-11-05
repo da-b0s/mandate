@@ -23,15 +23,35 @@ export async function loadReceipt(taskId) {
   return rows[0]?.data ?? null;
 }
 
-/** All receipts, or one user's (owner) or the demo's (owner = null) when `owner` is given. */
-export async function listReceipts(owner) {
-  const rows =
-    owner === undefined
-      ? await sql()`select data from receipts order by created_at asc`
+/**
+ * All receipts, or one user's (owner) or the demo's (owner = null) when `owner` is given.
+ * { light: true } drops the bulky steps and vendor outputs (about 90% of the bytes) for
+ * pages that only need totals; startedAt then comes from the row's created_at.
+ */
+export async function listReceipts(owner, { light = false } = {}) {
+  const q = sql();
+  const rows = light
+    ? owner === undefined
+      ? await q`select data - 'steps' - 'outputs' as data, created_at from receipts order by created_at asc`
       : owner === null
-        ? await sql()`select data from receipts where owner is null order by created_at asc`
-        : await sql()`select data from receipts where owner = ${owner} order by created_at asc`;
-  return rows.map((r) => r.data);
+        ? await q`select data - 'steps' - 'outputs' as data, created_at from receipts where owner is null order by created_at asc`
+        : await q`select data - 'steps' - 'outputs' as data, created_at from receipts where owner = ${owner} order by created_at asc`
+    : owner === undefined
+      ? await q`select data, created_at from receipts order by created_at asc`
+      : owner === null
+        ? await q`select data, created_at from receipts where owner is null order by created_at asc`
+        : await q`select data, created_at from receipts where owner = ${owner} order by created_at asc`;
+  return rows.map((r) => ({ ...r.data, startedAt: r.data.steps?.[0]?.at ?? new Date(r.created_at).toISOString() }));
+}
+
+/** Latest payout address quoted by each vendor (for cap proposals), without loading receipts. */
+export async function latestPayees() {
+  const rows = await sql()`
+    select distinct on (p->>'service') p->>'service' as service, p->>'payee' as payee
+    from receipts, jsonb_array_elements(data->'payments') p
+    where p->>'payee' is not null
+    order by p->>'service', created_at desc`;
+  return Object.fromEntries(rows.map((r) => [r.service, r.payee]));
 }
 
 /** Replay protection for MPP: implements @suimpp/mpp's DigestStore. */

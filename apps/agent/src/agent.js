@@ -55,14 +55,16 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
     }
   }
   const cands = SERVICES.filter((s) => s.taskTypes.includes(task.type));
+  // Value memories for every candidate and the user's preferences, recalled in parallel.
+  const [values, prefs] = await Promise.all([
+    Promise.all(cands.map((c) => (useMemory ? recallValue(c.service, task.type) : { obs: [], blobId: null }))),
+    useMemory ? recallPreferences().catch(() => []) : [],
+  ]);
   const history = {};
-  for (const c of cands) {
-    const v = useMemory ? await recallValue(c.service, task.type) : { obs: [], blobId: null };
-    history[c.service] = v.obs;
-    if (v.blobId) receipt.memoriesUsed.push({ service: c.service, blobId: v.blobId, observations: v.obs.length });
+  for (const [i, c] of cands.entries()) {
+    history[c.service] = values[i].obs;
+    if (values[i].blobId) receipt.memoriesUsed.push({ service: c.service, blobId: values[i].blobId, observations: values[i].obs.length });
   }
-  // Preferences from memory (analyze()); they can only make the agent spend less.
-  const prefs = useMemory ? await recallPreferences().catch(() => []) : [];
   if (prefs.length) log({ step: "preferences", count: prefs.length });
 
   const ordered = useMemory ? rankCandidates(cands.map((c) => ({ ...c, payee: "" })), (c) => history[c.service], now) : cands;

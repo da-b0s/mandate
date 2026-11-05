@@ -6,12 +6,12 @@ import { currentOwner } from "./context.js";
 const PRICE = Object.fromEntries(SERVICES.map((s) => [s.service, s.price]));
 
 /** This agent's receipts: the signed-in user's, or the demo's when nobody is signed in. Pass all=true for everything. */
-export async function listReceipts({ all = false } = {}) {
-  return (await listAll(all ? undefined : currentOwner())).map((r) => ({ ...r, startedAt: r.steps?.[0]?.at ?? null }));
+export async function listReceipts({ all = false, light = false } = {}) {
+  return listAll(all ? undefined : currentOwner(), { light });
 }
 
 export async function valueStats() {
-  const receipts = (await listReceipts()).filter((r) => r.task?.type !== "unknown");
+  const receipts = (await listReceipts({ light: true })).filter((r) => r.task?.type !== "unknown");
   const services = {};
   const tasks = receipts.map((r) => {
     const spent = r.payments.reduce((s, p) => s + p.amount, 0);
