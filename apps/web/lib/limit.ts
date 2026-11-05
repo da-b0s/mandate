@@ -10,11 +10,16 @@ export function allowTask(req: Request): { ok: true } | { ok: false; error: stri
   const now = Date.now();
   if (now - day.start > 86_400_000) day = { start: now, count: 0 };
   if (day.count >= PER_DAY) return { ok: false, error: "The demo's daily task limit is used up. Try again tomorrow." };
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const ip = clientIp(req);
   const recent = (hits.get(ip) ?? []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= PER_IP) return { ok: false, error: `Limit of ${PER_IP} tasks per 10 minutes reached. Try again shortly.` };
   recent.push(now);
   hits.set(ip, recent);
   day.count += 1;
   return { ok: true };
+}
+
+/** The visitor's address: first hop of x-forwarded-for (the Vercel front door and Render both forward it). */
+export function clientIp(req: Request) {
+  return req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "local";
 }

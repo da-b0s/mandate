@@ -27,7 +27,23 @@ async function retry(fn, attempts = 4) {
  * identical signed transaction cannot execute twice, so network errors are safe to retry.
  * Throws if the transaction itself fails. Returns { digest, effects, objectTypes }.
  */
-export async function execute(tx, signer, { sponsor } = {}) {
+// One transaction at a time per sending wallet in this process: two concurrent payments from the
+// same agent could otherwise pick the same USDC coin, and Sui would reject or lock it. Different
+// wallets still run in parallel. (Gas comes from address balances, which need no coin at all.)
+const lanes = new Map();
+function inLane(address, fn) {
+  const prev = lanes.get(address) ?? Promise.resolve();
+  const run = prev.catch(() => {}).then(fn);
+  lanes.set(address, run);
+  run.finally(() => lanes.get(address) === run && lanes.delete(address));
+  return run;
+}
+
+export function execute(tx, signer, opts = {}) {
+  return inLane(signer.toSuiAddress(), () => executeNow(tx, signer, opts));
+}
+
+async function executeNow(tx, signer, { sponsor } = {}) {
   tx.setSenderIfNotSet(signer.toSuiAddress());
   // Sponsored: another key pays gas, so a user's agent only ever needs USDC.
   if (sponsor) tx.setGasOwner(sponsor.toSuiAddress());
