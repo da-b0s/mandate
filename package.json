@@ -10,7 +10,8 @@
     "spike:mpp": "node scripts/spike-mpp.js",
     "wallets": "node scripts/check-wallets.js",
     "task": "node scripts/task.js",
-    "rate": "node scripts/rate.js"
+    "rate": "node scripts/rate.js",
+    "verify": "node scripts/verify.js"
   },
   "dependencies": {
     "@mandate/chain": "workspace:*",

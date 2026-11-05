@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Policy engine tests
+        run: pnpm --filter @mandate/policy test
+      - name: Policy engine types
+        run: pnpm --filter @mandate/policy exec tsc -p .
+      - name: Web app types
+        run: pnpm --filter @mandate/web exec tsc --noEmit -p .
+
+  move:
+    runs-on: ubuntu-latest
+    container: mysten/sui-tools:mainnet
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move unit tests (mandate::grant)
+        run: sui move test --path packages/move
