@@ -21,7 +21,10 @@ declare module "@mandate/chain" {
   export function heartbeatTx(o: { grantId: string }): any;
   export function revokeTx(o: { grantId: string }): any;
   export function createGrantTx(o: { agent: string; weeklyBudget: number; perCallCap: number; expiresMs: number; dormancyMs: number }): any;
-  export function buildFor(tx: any, sender: string): Promise<string>;
-  export function submitSigned(bytes: string, signature: string): Promise<any>;
+  export function buildFor(tx: any, sender: string, o?: { sponsor?: any }): Promise<string>;
+  export function submitSigned(bytes: string, signature: string, o?: { sponsor?: any }): Promise<any>;
+  export function agentSigner(): any;
+  export function currentEpoch(): Promise<number>;
+  export function zkLogin(o: { jwt: string; maxEpoch: number; extendedEphemeralPublicKey: string; randomness: string }): Promise<any>;
   export const fullnode: any;
 }

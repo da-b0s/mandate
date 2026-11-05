@@ -41,16 +41,20 @@ export async function execute(tx, signer) {
 }
 
 /** Build a transaction for an external signer (e.g. the owner's browser wallet). Returns base64 bytes. */
-export async function buildFor(tx, sender) {
+export async function buildFor(tx, sender, { sponsor } = {}) {
   tx.setSender(sender);
+  // Sponsored: the server's key pays gas, so a fresh zkLogin address with 0 SUI can still act.
+  if (sponsor) tx.setGasOwner(sponsor.toSuiAddress());
   const bytes = await retry(() => tx.build({ client: fullnode }));
   return Buffer.from(bytes).toString("base64");
 }
 
 /** Submit bytes signed elsewhere; same resend-safe path as execute(). */
-export async function submitSigned(bytesB64, signature) {
+export async function submitSigned(bytesB64, signature, { sponsor } = {}) {
   const transaction = Uint8Array.from(Buffer.from(bytesB64, "base64"));
-  const res = await retry(() => fullnode.executeTransaction({ transaction, signatures: [signature], include: { effects: true, events: true, objectTypes: true } }));
+  const signatures = [signature];
+  if (sponsor) signatures.push((await sponsor.signTransaction(transaction)).signature);
+  const res = await retry(() => fullnode.executeTransaction({ transaction, signatures, include: { effects: true, events: true, objectTypes: true } }));
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error(`tx ${t.digest} failed: ${JSON.stringify(t.effects.status.error)}`);
   await retry(() => fullnode.waitForTransaction({ digest: t.digest }));

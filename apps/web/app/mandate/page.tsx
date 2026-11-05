@@ -1,5 +1,5 @@
 "use client";
-import { ConnectButton, useCurrentAccount, useSignPersonalMessage, useSignTransaction } from "@mysten/dapp-kit";
+import { SignIn, useOwner } from "@/lib/owner";
 import { useEffect, useState } from "react";
 import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
@@ -8,8 +8,8 @@ type Result = { ok: boolean; text: string; digest?: string; memoryBlob?: string 
 
 // The owner's console: the agent proposes, the owner decides, the chain enforces.
 export default function MandatePage() {
-  const account = useCurrentAccount();
-  const { mutateAsync: signTransaction } = useSignTransaction();
+  const owner = useOwner();
+  const account = owner.address ? { address: owner.address } : null;
   const [data, setData] = useState<any>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -28,7 +28,7 @@ export default function MandatePage() {
     try {
       const built = await fetch("/api/owner/build", { method: "POST", body: JSON.stringify({ ...body, sender: account.address }) }).then((r) => r.json());
       if (built.error) throw new Error(built.error);
-      const { signature } = await signTransaction({ transaction: built.bytes, chain: "sui:mainnet" });
+      const signature = await owner.signTransaction(built.bytes);
       const sent = await fetch("/api/owner/submit", { method: "POST", body: JSON.stringify({ bytes: built.bytes, signature, action: body.action }) }).then((r) => r.json());
       if (sent.error) throw new Error(sent.error);
       setResult({ ok: true, text: `${body.action} confirmed onchain`, digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
@@ -52,7 +52,7 @@ export default function MandatePage() {
 
       <div className="card row" style={{ justifyContent: "space-between" }}>
         <div className="small">
-          {!account && <span className="muted">Connect the owner wallet to approve changes.</span>}
+          {!account && <span className="muted">Sign in as the owner to approve changes.</span>}
           {account && isOwner && <span className="pill ok">Connected as owner</span>}
           {account && data && !isOwner && (
             <span className="pill warn">
@@ -60,7 +60,7 @@ export default function MandatePage() {
             </span>
           )}
         </div>
-        <ConnectButton />
+        <SignIn />
       </div>
 
       {result && (
@@ -200,7 +200,7 @@ function CreateMandate({ disabled, busy, onCreate }: { disabled: boolean; busy: 
 
 // Blueprint 8.5 mandate-prefs: free text -> Walrus Memory analyze() -> facts the agent recalls before paying.
 function Preferences({ isOwner }: { isOwner: boolean }) {
-  const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
+  const owner = useOwner();
   const [prefs, setPrefs] = useState<any[] | null>(null);
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
@@ -212,8 +212,8 @@ function Preferences({ isOwner }: { isOwner: boolean }) {
   async function save() {
     setStatus("Waiting for your wallet…");
     try {
-      const { signature } = await signPersonalMessage({ message: new TextEncoder().encode(`MANDATE preference:
-${text.trim()}`) });
+      const signature = await owner.signMessage(new TextEncoder().encode(`MANDATE preference:
+${text.trim()}`));
       setStatus("Extracting facts with Walrus Memory…");
       const j = await fetch("/api/prefs", { method: "POST", body: JSON.stringify({ text: text.trim(), signature }) }).then((r) => r.json());
       if (j.error) throw new Error(j.error);

@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (typeof bytes !== "string" || typeof signature !== "string") return Response.json({ error: "bad request" }, { status: 400 });
   try {
     const [a, c] = await Promise.all([agent(), chain()]);
-    const t = await c.submitSigned(bytes, signature);
+    const t = await c.submitSigned(bytes, signature, { sponsor: c.agentSigner() });
     const out: Record<string, unknown> = { digest: t.digest };
     if (action === "cap") out.ratification = await a.recordRatification({ grantId: await a.activeGrantId(), digest: t.digest });
     if (action === "create") {

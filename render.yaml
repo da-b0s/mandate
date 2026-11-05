@@ -55,7 +55,7 @@ services:
         sync: false
       - key: DATABASE_URL_POOLED
         sync: false
-      - key: NEXT_PUBLIC_ENOKI_API_KEY
+      - key: SHINAMI_WALLET_ACCESS_KEY
         sync: false
       - key: NEXT_PUBLIC_GOOGLE_CLIENT_ID
         sync: false
