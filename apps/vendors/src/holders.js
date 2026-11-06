@@ -3,7 +3,8 @@
 import { screenAddress, tatumGet } from "./tatum-data.js";
 
 const CHAINS = new Set(["ethereum-mainnet", "base-mainnet", "arb-one-mainnet", "polygon-mainnet", "bsc-mainnet"]);
-const SAMPLE = 10;
+// Each sampled holder costs one Tatum security call; 5 keeps the check useful and the credits low.
+const SAMPLE = 5;
 
 export async function holderCheck(token, chain = "ethereum-mainnet") {
   if (!/^0x[0-9a-fA-F]{40}$/.test(token)) return { error: "token must be an EVM contract address" };

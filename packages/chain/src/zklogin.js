@@ -2,7 +2,7 @@
 // The browser keeps the ephemeral key and signs; the server fetches the user's salt/address and the zk proof.
 import "dotenv/config";
 import { decodeJwt, genAddressSeed } from "@mysten/sui/zklogin";
-import { fullnode } from "./wallet.js";
+import { tatum } from "./tatum.js";
 
 async function shinami(path, method, params) {
   const key = process.env.SHINAMI_WALLET_ACCESS_KEY;
@@ -23,7 +23,7 @@ async function shinami(path, method, params) {
 }
 
 export async function currentEpoch() {
-  const s = await fullnode.core.getCurrentSystemState();
+  const s = await tatum.core.getCurrentSystemState();
   return Number(s.systemState.epoch);
 }
 

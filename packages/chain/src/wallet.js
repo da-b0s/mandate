@@ -1,10 +1,13 @@
-// Agent signer and transaction execution (sent via the public fullnode; reads go through Tatum).
+// Agent signer and transaction execution. Everything goes through Tatum's Sui gRPC gateway:
+// building (gas price, dry run), submitting, and confirming, as well as every read.
 import "dotenv/config";
-import { SuiGrpcClient } from "@mysten/sui/grpc";
 import { decodeSuiPrivateKey } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 
-export const fullnode = new SuiGrpcClient({ baseUrl: "https://fullnode.mainnet.sui.io:443", network: "mainnet" });
+import { tatum } from "./tatum.js";
+
+/** The Sui client the app sends transactions with (Tatum). Kept under this name for existing callers. */
+export const fullnode = tatum;
 
 export function agentSigner() {
   const { secretKey } = decodeSuiPrivateKey(process.env.AGENT_SUI_KEY.trim());
@@ -46,39 +49,49 @@ export function execute(tx, signer, opts = {}) {
   return inLane(signer.toSuiAddress(), () => executeNow(tx, signer, opts));
 }
 
-async function executeNow(tx, signer, { sponsor } = {}) {
+// Sponsoring yourself is not a sponsorship: Sui wants exactly one signature when sender and gas owner match.
+const effectiveSponsor = (sponsor, sender) => (sponsor && sponsor.toSuiAddress() !== sender ? sponsor : null);
+
+async function executeNow(tx, signer, opts = {}) {
   tx.setSenderIfNotSet(signer.toSuiAddress());
+  const sponsor = effectiveSponsor(opts.sponsor, signer.toSuiAddress());
   // Sponsored: another key pays gas, so a user's agent only ever needs USDC.
   if (sponsor) tx.setGasOwner(sponsor.toSuiAddress());
-  const bytes = await retry(() => tx.build({ client: fullnode }));
+  const bytes = await retry(() => tx.build({ client: tatum }));
   const signatures = [(await signer.signTransaction(bytes)).signature];
   if (sponsor) signatures.push((await sponsor.signTransaction(bytes)).signature);
   const res = await retry(() =>
-    fullnode.executeTransaction({ transaction: bytes, signatures, include: { effects: true, objectTypes: true, events: true } }),
+    tatum.executeTransaction({ transaction: bytes, signatures, include: { effects: true, objectTypes: true, events: true } }),
   );
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error(`tx ${t.digest} failed: ${JSON.stringify(t.effects.status.error)}`);
-  await retry(() => fullnode.waitForTransaction({ digest: t.digest }));
+  await retry(() => tatum.waitForTransaction({ digest: t.digest }));
   return t;
 }
 
 /** Build a transaction for an external signer (e.g. the owner's browser wallet). Returns base64 bytes. */
-export async function buildFor(tx, sender, { sponsor } = {}) {
+export async function buildFor(tx, sender, opts = {}) {
   tx.setSender(sender);
+  const sponsor = effectiveSponsor(opts.sponsor, sender);
   // Sponsored: the server's key pays gas, so a fresh zkLogin address with 0 SUI can still act.
   if (sponsor) tx.setGasOwner(sponsor.toSuiAddress());
-  const bytes = await retry(() => tx.build({ client: fullnode }));
+  const bytes = await retry(() => tx.build({ client: tatum }));
   return Buffer.from(bytes).toString("base64");
 }
 
 /** Submit bytes signed elsewhere; same resend-safe path as execute(). */
-export async function submitSigned(bytesB64, signature, { sponsor } = {}) {
+export async function submitSigned(bytesB64, signature, opts = {}) {
   const transaction = Uint8Array.from(Buffer.from(bytesB64, "base64"));
   const signatures = [signature];
-  if (sponsor) signatures.push((await sponsor.signTransaction(transaction)).signature);
-  const res = await retry(() => fullnode.executeTransaction({ transaction, signatures, include: { effects: true, events: true, objectTypes: true } }));
+  // Only co-sign if the bytes really name the sponsor as gas owner (buildFor may have skipped it).
+  const { Transaction } = await import("@mysten/sui/transactions");
+  const gasOwner = Transaction.from(transaction).getData().gasData.owner;
+  if (opts.sponsor && gasOwner === opts.sponsor.toSuiAddress() && gasOwner !== Transaction.from(transaction).getData().sender) {
+    signatures.push((await opts.sponsor.signTransaction(transaction)).signature);
+  }
+  const res = await retry(() => tatum.executeTransaction({ transaction, signatures, include: { effects: true, events: true, objectTypes: true } }));
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error(`tx ${t.digest} failed: ${JSON.stringify(t.effects.status.error)}`);
-  await retry(() => fullnode.waitForTransaction({ digest: t.digest }));
+  await retry(() => tatum.waitForTransaction({ digest: t.digest }));
   return t;
 }
