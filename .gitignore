@@ -9,3 +9,7 @@ data/
 .next/
 next-env.d.ts
 *.tsbuildinfo
+
+# Private session handoff notes (never commit)
+.handoff/
+CLAUDE.local.md
