@@ -2,7 +2,7 @@
 .env.*
 !.env.example
 node_modules/
-build/
+packages/move/build/
 .vercel/
 *.log
 data/
