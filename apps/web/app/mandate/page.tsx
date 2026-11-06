@@ -136,29 +136,34 @@ export default function MandatePage() {
 
       {owner.me?.agent?.grantId && <Schedules />}
 
-      <Preferences isOwner={Boolean(isOwner)} />
+      {/* Owner-only controls: visitors see what the agent learned above, not buttons they cannot use. */}
+      {isOwner && <Preferences isOwner />}
 
-      <CreateMandate disabled={!(isOwner || needsMandate) || busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+      {(isOwner || needsMandate) && (
+        <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+      )}
 
-      <div className="card stack">
-        <h2>Dead man&apos;s switch</h2>
-        <p className="small muted" style={{ margin: 0 }}>
-          If the owner stops sending heartbeats, the grant goes dormant and every payment is refused with GRANT_DENIED: dormant. A heartbeat revives it.
-        </p>
-        <div className="row">
-          <button className="primary" disabled={!isOwner || busy !== null} onClick={() => act("heartbeat", { action: "heartbeat" })}>
-            {busy === "heartbeat" ? "Signing…" : "Send heartbeat"}
-          </button>
-          <button
-            disabled={!isOwner || busy !== null}
-            onClick={() => {
-              if (confirm("Revoke this grant? The agent can never spend under it again. This cannot be undone.")) act("revoke", { action: "revoke" });
-            }}
-          >
-            {busy === "revoke" ? "Signing…" : "Revoke grant"}
-          </button>
+      {isOwner && (
+        <div className="card stack">
+          <h2>Dead man&apos;s switch</h2>
+          <p className="small muted" style={{ margin: 0 }}>
+            If the owner stops sending heartbeats, the grant goes dormant and every payment is refused with GRANT_DENIED: dormant. A heartbeat revives it.
+          </p>
+          <div className="row">
+            <button className="primary" disabled={busy !== null} onClick={() => act("heartbeat", { action: "heartbeat" })}>
+              {busy === "heartbeat" ? "Signing…" : "Send heartbeat"}
+            </button>
+            <button
+              disabled={busy !== null}
+              onClick={() => {
+                if (confirm("Revoke this grant? The agent can never spend under it again. This cannot be undone.")) act("revoke", { action: "revoke" });
+              }}
+            >
+              {busy === "revoke" ? "Signing…" : "Revoke grant"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

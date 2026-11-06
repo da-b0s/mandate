@@ -42,7 +42,12 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <TaskChart tasks={v.tasks} compare={compare} />
+        <TaskChart tasks={v.tasks.slice(-CHART_TASKS)} compare={compare} />
+        {v.tasks.length > CHART_TASKS && (
+          <p className="small muted" style={{ margin: 0 }}>
+            Latest {CHART_TASKS} of {v.tasks.length} tasks; totals above cover all of them.
+          </p>
+        )}
         <div className="row small muted">
           <Swatch color="var(--accent)" /> useful spend
           <Swatch color="var(--bad)" /> wasted spend
@@ -131,6 +136,8 @@ function Swatch({ color, outline }: { color?: string; outline?: boolean }) {
 
 // One bar per task, oldest left. Stacked useful + wasted spend; a dashed outline marks
 // the memory-OFF counterfactual (every planned service paid).
+const CHART_TASKS = 40;
+
 function TaskChart({ tasks, compare }: { tasks: any[]; compare: boolean }) {
   const [hover, setHover] = useState<number | null>(null);
   const H = 160;

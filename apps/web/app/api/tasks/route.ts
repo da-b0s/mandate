@@ -14,7 +14,14 @@ export async function POST(req: Request) {
   const gate = allowTask(req);
   if (!gate.ok) return Response.json({ error: gate.error }, { status: 429 });
   const owner = await sessionOwner();
-  const { runTask } = await agent();
+  const a = await agent();
+  const { runTask } = a;
+  // Signed in but not set up yet: say so, rather than quietly running the demo agent for them.
+  if (owner) {
+    const me = await a.getUserAgent(owner);
+    if (!me) return Response.json({ error: "You're signed in. Create your agent first (step 1 on this page)." }, { status: 409 });
+    if (!me.grantId) return Response.json({ error: "Your agent needs a mandate first: sign one on the Mandate page (step 2)." }, { status: 409 });
+  }
   const enc = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
