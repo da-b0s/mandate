@@ -39,6 +39,13 @@ async function build(body: any) {
       tx = c.setServiceCapTx({ grantId, payee, cap });
     } else if (action === "heartbeat") tx = c.heartbeatTx({ grantId });
     else if (action === "revoke") tx = c.revokeTx({ grantId });
+    else if (action === "withdraw") {
+      // Anything still in the agent's wallet goes into the grant first, so this really takes it all.
+      await a.sweepWallet(grantId);
+      const amount = await c.readVault(grantId);
+      if (!amount) return Response.json({ error: "This mandate holds no USDC." }, { status: 400 });
+      tx = c.withdrawTx({ grantId, amount });
+    }
     else return Response.json({ error: "unknown action" }, { status: 400 });
   }
   const guard = await allowSponsored(sender, action === "create" ? "create" : "action");

@@ -3,7 +3,7 @@
 // the ratification memory is written after the onchain tx and cites its digest.
 import { bcs } from "@mysten/sui/bcs";
 import { estimateValue, proposeCap } from "@mandate/policy";
-import { readGrant, tatum, PACKAGE_ID } from "@mandate/chain";
+import { readGrant, tatum, ORIGINAL_PACKAGE_ID, PACKAGE_ID } from "@mandate/chain";
 import { latestPayees } from "@mandate/store";
 import { SERVICES } from "./catalog.js";
 import { NS, recallValue, rememberWait } from "./memory.js";
@@ -49,7 +49,7 @@ export async function recordRatification({ grantId, digest }) {
   const res = await tatum.getTransaction({ digest, include: { events: true, effects: true, transaction: true } });
   const t = res.Transaction ?? res.FailedTransaction;
   if (!t.effects.status.success) throw new Error("transaction failed");
-  const ev = t.events.find((e) => e.eventType === `${PACKAGE_ID}::grant::CapChanged`);
+  const ev = t.events.find((e) => e.eventType === `${ORIGINAL_PACKAGE_ID}::grant::CapChanged`);
   if (!ev) throw new Error("no CapChanged event in this transaction");
   const e = CapChanged.parse(ev.bcs);
   if (e.grant !== grantId) throw new Error("CapChanged event is for a different grant");

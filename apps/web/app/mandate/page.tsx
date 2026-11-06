@@ -161,6 +161,14 @@ export default function MandatePage() {
             >
               {busy === "revoke" ? "Signing…" : "Revoke grant"}
             </button>
+            <button
+              disabled={busy !== null}
+              onClick={() => {
+                if (confirm("Withdraw all USDC from this mandate to your wallet? The agent cannot spend until you fund it again.")) act("withdraw", { action: "withdraw" });
+              }}
+            >
+              {busy === "withdraw" ? "Signing…" : "Withdraw all USDC"}
+            </button>
           </div>
         </div>
       )}

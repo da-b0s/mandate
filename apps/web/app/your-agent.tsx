@@ -83,8 +83,8 @@ export function YourAgent({ compact = false }: { compact?: boolean }) {
       {!funded && (
         <div className="stack">
           <span>
-            <strong>Step 3 of 3: fund it.</strong> Send a little USDC on Sui (0.20 covers several tasks) to your agent&apos;s address. It pays
-            vendors from this balance, within your mandate. Free checks (like sanctioned wallets) work without funds.
+            <strong>Step 3 of 3: fund it.</strong> Send a little USDC on Sui (0.20 covers several tasks) to your agent&apos;s address. It moves
+            into your mandate, where the contract enforces your limits and you can withdraw it at any time. Free checks (like sanctioned wallets) work without funds.
           </span>
           <div className="row">
             <code style={{ wordBreak: "break-all" }}>{a.address}</code>

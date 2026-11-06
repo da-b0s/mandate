@@ -28,7 +28,6 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
   const task = classify(ask);
   log({ step: "classified", type: task.type, subject: task.subject });
 
-  const pendingRecords = [];
   const receipt = { taskId, owner: currentOwner(), ask, task, useMemory, grantId, plan: [], memoriesUsed: [], payments: [], skipped: [], denied: [], outputs: {}, steps };
   if (task.type === "unknown") {
     receipt.answer = "I need a 0x wallet or token address to work on.";
@@ -101,9 +100,8 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
       log({ step: "buying", service: c.service, price: c.price });
       const r = await guardedPurchase({ grantId, url: c.url(task), expectedPrice: c.price, log: (s) => log({ service: c.service, ...s }) });
       if (r.payment) {
-        const { retryRecord, ...payment } = r.payment;
+        const { payment } = r;
         receipt.payments.push({ service: c.service, ...payment, delivered: r.status === 200 });
-        if (retryRecord) pendingRecords.push({ service: c.service, digest: payment.digest, retryRecord });
       }
       receipt.outputs[c.service] = r.body;
       if (r.status !== 200) log({ step: "delivery-failed", service: c.service, status: r.status, refundWorthy: Boolean(r.payment) });
@@ -151,31 +149,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
   }
   log({ step: "done", totalSpent: receipt.totalSpent });
   await saveReceipt(receipt);
-  if (pendingRecords.length) retryRecords(taskId, pendingRecords);
   return receipt;
-}
-
-/**
- * The money moved but recording it on the grant failed (usually a network blip). Retry in the
- * background, a minute apart, and fill in the receipt; scripts/record-pending.js covers anything left.
- */
-function retryRecords(taskId, pending) {
-  (async () => {
-    for (const p of pending) {
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        await new Promise((r) => setTimeout(r, 60_000));
-        try {
-          const rec = await p.retryRecord();
-          const r = await loadReceipt(taskId);
-          const pay = r.payments.find((x) => x.digest === p.digest);
-          pay.recordDigest = rec.digest;
-          delete pay.recordError;
-          await saveReceipt(r);
-          break;
-        } catch {}
-      }
-    }
-  })();
 }
 
 /** User (or scripted) rating. Each paid service gets its own usefulness verdict. */

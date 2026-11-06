@@ -1,10 +1,11 @@
-// One guarded purchase: grant check on the real 402 quote, pay via MPP on Sui,
-// verify through Tatum, then record the spend on the onchain grant.
+// One guarded purchase: grant check on the real 402 quote, pay from the funds held in the grant
+// (the Move contract enforces the limits in that same transaction), then verify through Tatum.
 import { Mppx } from "mppx/client";
 import { USDC, sui } from "@suimpp/mpp/client";
 import { checkGrant } from "@mandate/policy";
-import { execute, fullnode, readGrant, recordSpendTx, tatum } from "@mandate/chain";
+import { execute, fullnode, payTx, readGrant, tatum } from "@mandate/chain";
 import { currentSigner, currentSponsor } from "./context.js";
+import { fundsFor } from "./custody.js";
 
 export class GrantDenied extends Error {
   constructor(reason, detail) {
@@ -22,10 +23,16 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
   const sponsor = currentSponsor();
   const send = (tx) => execute(tx, signer, { sponsor });
   let quote;
+  let sweep = 0;
   const mppx = Mppx.create({
     polyfill: false,
-    // Payments go through the same sign-once, resend-on-network-error path as every other tx.
-    methods: [sui({ client: fullnode, signer, currency: USDC, execute: send })],
+    // The library's own transaction would pay from the agent's wallet; ours pays from the grant.
+    methods: [sui({
+      client: fullnode,
+      signer,
+      currency: USDC,
+      execute: () => send(payTx({ grantId, payee: quote.recipient, amount: quote.amount, memo: "mpp", sweep })),
+    })],
     async onChallenge(challenge, { createCredential }) {
       const r = challenge.request;
       quote = { amount: toBase(r.amount), recipient: r.recipient, currency: r.currency };
@@ -36,6 +43,9 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
       const grant = await readGrant(grantId);
       const d = checkGrant(grant, quote.recipient, quote.amount, Date.now());
       if (!d.ok) throw new GrantDenied(d.reason, d.detail);
+      const funds = await fundsFor(grantId);
+      if (funds.vault + funds.wallet < quote.amount) throw new GrantDenied("funds", "the mandate does not hold enough USDC");
+      sweep = funds.wallet;
       log?.({ step: "grant-ok", spentThisWeek: grant.spentThisWeek, weeklyBudget: grant.weeklyBudget });
       return createCredential();
     },
@@ -51,16 +61,8 @@ export async function guardedPurchase({ grantId, url, expectedPrice, log }) {
   const payment = await verifyPayment(digest, quote, signer.toSuiAddress());
   log?.({ step: "verified", ...payment });
 
-  // The money has moved: a failure here must not lose the receipt. Flag it for scripts/record-pending.js.
-  try {
-    const rec = await send(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }));
-    payment.recordDigest = rec.digest;
-    log?.({ step: "recorded", digest: rec.digest });
-  } catch (e) {
-    payment.recordError = String(e.message ?? e).slice(0, 300);
-    log?.({ step: "record-failed", digest, error: payment.recordError });
-    payment.retryRecord = () => send(recordSpendTx({ grantId, payee: quote.recipient, amount: quote.amount, digest }));
-  }
+  // The payment transaction recorded the spend on the grant itself.
+  payment.recordDigest = digest;
   return { status: res.status, body, payment };
 }
 

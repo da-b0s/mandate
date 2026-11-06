@@ -1,18 +1,17 @@
 // Sending money for the owner, one-off or on a schedule.
 //
-// The USDC transfer and the grant's record_spend go in ONE transaction. record_spend aborts if the
-// payment breaks any limit (weekly budget, per-call or recipient cap, expiry, revoke, dead man's
-// switch), and an abort reverts the whole transaction, so the money cannot move. For transfers the
-// grant is enforced by the Move contract itself, not only checked by our server first.
-import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+// The money leaves the grant through `pay`, which checks every limit (weekly budget, per-call or
+// recipient cap, expiry, revoke, dead man's switch) in the same transaction, so an over-limit
+// transfer cannot move anything.
 import { checkGrant } from "@mandate/policy";
-import { execute, PACKAGE_ID, readGrant, tatum } from "@mandate/chain";
+import { execute, payTx, readGrant, tatum } from "@mandate/chain";
 import { USDC } from "@suimpp/mpp";
 import { currentSigner, currentSponsor } from "./context.js";
+import { fundsFor } from "./custody.js";
 
 export const MIN_INTERVAL_MS = 3_600_000;
 
-const ABORTS = { 2: "revoked", 3: "expired", 4: "dormant", 5: "over_cap", 6: "budget" };
+const ABORTS = { 2: "revoked", 3: "expired", 4: "dormant", 5: "over_cap", 6: "budget", 11: "funds" };
 
 /** Returns { digest, amount, recipient } or { denied: { reason, detail } }; throws only on unexpected errors. */
 export async function sendUsdc({ grantId, recipient, amount, log = () => {} }) {
@@ -23,13 +22,9 @@ export async function sendUsdc({ grantId, recipient, amount, log = () => {} }) {
   if (!pre.ok) return { denied: { reason: pre.reason, detail: pre.detail } };
   log({ step: "grant-ok", spentThisWeek: grant.spentThisWeek, weeklyBudget: grant.weeklyBudget });
 
-  const tx = new Transaction();
-  tx.setSender(signer.toSuiAddress());
-  tx.transferObjects([coinWithBalance({ type: USDC.type, balance: BigInt(amount) })], recipient);
-  tx.moveCall({
-    target: `${PACKAGE_ID}::grant::record_spend`,
-    arguments: [tx.object(grantId), tx.pure.address(recipient), tx.pure.u64(amount), tx.pure.vector("u8", [...Buffer.from("transfer")]), tx.object.clock()],
-  });
+  const funds = await fundsFor(grantId);
+  if (funds.vault + funds.wallet < amount) return { denied: { reason: "funds", detail: "the mandate does not hold enough USDC" } };
+  const tx = payTx({ grantId, payee: recipient, amount, memo: "transfer", sweep: funds.wallet });
   let t;
   try {
     t = await execute(tx, signer, { sponsor: currentSponsor() });

@@ -2,12 +2,20 @@
 /// caps, expiry, revocation and a dead man's switch (the grant freezes if the
 /// owner stops sending heartbeats).
 ///
-/// Enforcement level A: the grant stores limits and counters; the agent checks
-/// them before paying and must call `record_spend` after, which aborts if the
-/// spend would break any limit. Funds stay in the agent's wallet (no custody).
+/// Enforcement level B (custody): USDC sits inside the grant. The agent can only
+/// move it with `pay`, which checks every limit in the same transaction, and the
+/// owner can take it back with `withdraw` at any time. A leaked agent key can
+/// therefore lose at most what the limits allow.
+///
+/// `record_spend` remains from level A, for grants that paid from the agent's wallet.
 module mandate::grant;
 
+use std::ascii;
+use std::type_name;
+use sui::balance::{Self, Balance};
 use sui::clock::Clock;
+use sui::coin::{Self, Coin};
+use sui::dynamic_field as df;
 use sui::event;
 use sui::vec_map::{Self, VecMap};
 
@@ -24,6 +32,11 @@ const EOverBudget: u64 = 6;
 const EInvalidLimits: u64 = 7;
 const EWrongVersion: u64 = 8;
 const EZeroAmount: u64 = 9;
+const ENotUsdc: u64 = 10;
+const EInsufficientFunds: u64 = 11;
+
+/// Limits are denominated in USDC, so nothing else may enter the vault.
+const USDC_TYPE: vector<u8> = b"dba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
 
 public struct Grant has key {
     id: UID,
@@ -44,6 +57,13 @@ public struct Grant has key {
     total_spent: u64,
     payments: u64,
 }
+
+/// Dynamic field on the Grant holding its Balance<USDC>.
+public struct VaultKey has copy, drop, store {}
+
+public struct Deposited has copy, drop { grant: ID, from: address, amount: u64 }
+
+public struct Withdrawn has copy, drop { grant: ID, to: address, amount: u64 }
 
 public struct GrantCreated has copy, drop {
     grant: ID,
@@ -147,6 +167,67 @@ entry fun record_spend(
 ) {
     assert!(g.version == VERSION, EWrongVersion);
     assert!(ctx.sender() == g.agent, ENotAgent);
+    apply_spend(g, payee, amount, digest, clock);
+}
+
+/// Anyone may fund a grant; only `pay` and `withdraw` can take funds out.
+entry fun deposit<T>(g: &mut Grant, funds: Coin<T>, ctx: &TxContext) {
+    assert!(g.version == VERSION, EWrongVersion);
+    assert_usdc<T>();
+    let amount = funds.value();
+    assert!(amount > 0, EZeroAmount);
+    let incoming = funds.into_balance();
+    if (df::exists(&g.id, VaultKey {})) {
+        df::borrow_mut<VaultKey, Balance<T>>(&mut g.id, VaultKey {}).join(incoming);
+    } else {
+        df::add(&mut g.id, VaultKey {}, incoming);
+    };
+    event::emit(Deposited { grant: object::id(g), from: ctx.sender(), amount });
+}
+
+/// Agent pays from the vault. Limits and the transfer are one transaction: if any
+/// limit fails, nothing moves.
+entry fun pay<T>(
+    g: &mut Grant,
+    payee: address,
+    amount: u64,
+    memo: vector<u8>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    assert!(g.version == VERSION, EWrongVersion);
+    assert_usdc<T>();
+    assert!(ctx.sender() == g.agent, ENotAgent);
+    apply_spend(g, payee, amount, memo, clock);
+    let paid = take<T>(g, amount, ctx);
+    transfer::public_transfer(paid, payee);
+}
+
+/// Owner takes funds back. Deliberately not gated on revoke, expiry or dormancy:
+/// the owner must always be able to reach their money.
+entry fun withdraw<T>(g: &mut Grant, amount: u64, ctx: &mut TxContext) {
+    assert_owner(g, ctx);
+    assert_usdc<T>();
+    assert!(amount > 0, EZeroAmount);
+    let out = take<T>(g, amount, ctx);
+    let to = g.owner;
+    transfer::public_transfer(out, to);
+    event::emit(Withdrawn { grant: object::id(g), to, amount });
+}
+
+fun take<T>(g: &mut Grant, amount: u64, ctx: &mut TxContext): Coin<T> {
+    assert!(df::exists(&g.id, VaultKey {}), EInsufficientFunds);
+    let vault = df::borrow_mut<VaultKey, Balance<T>>(&mut g.id, VaultKey {});
+    assert!(vault.value() >= amount, EInsufficientFunds);
+    coin::from_balance(balance::split(vault, amount), ctx)
+}
+
+fun assert_usdc<T>() {
+    let name = type_name::with_defining_ids<T>();
+    assert!(*name.as_string() == ascii::string(USDC_TYPE), ENotUsdc);
+}
+
+fun apply_spend(g: &mut Grant, payee: address, amount: u64, digest: vector<u8>, clock: &Clock) {
     assert!(amount > 0, EZeroAmount);
     let now = clock.timestamp_ms();
     assert!(!g.revoked, ERevoked);
@@ -190,6 +271,12 @@ public fun spent_this_week(g: &Grant): u64 { g.spent_this_week }
 public fun total_spent(g: &Grant): u64 { g.total_spent }
 public fun payments(g: &Grant): u64 { g.payments }
 public fun revoked(g: &Grant): bool { g.revoked }
+
+public fun vault_balance<T>(g: &Grant): u64 {
+    if (df::exists(&g.id, VaultKey {})) {
+        df::borrow<VaultKey, Balance<T>>(&g.id, VaultKey {}).value()
+    } else 0
+}
 
 fun assert_owner(g: &Grant, ctx: &TxContext) {
     assert!(g.version == VERSION, EWrongVersion);

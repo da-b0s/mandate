@@ -1,11 +1,17 @@
 // mandate::grant: read the onchain Grant via Tatum gRPC and build its transactions.
 import { bcs } from "@mysten/sui/bcs";
-import { Transaction } from "@mysten/sui/transactions";
+import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+import { deriveDynamicFieldID } from "@mysten/sui/utils";
 import published from "../../move/published.json" with { type: "json" };
 import { tatum } from "./tatum.js";
 
+// Calls go to the latest upgrade; types and events keep the id of the first publish.
 export const PACKAGE_ID = published.packageId;
-export const GRANT_TYPE = `${PACKAGE_ID}::grant::Grant`;
+export const ORIGINAL_PACKAGE_ID = published.originalId ?? published.packageId;
+export const GRANT_TYPE = `${ORIGINAL_PACKAGE_ID}::grant::Grant`;
+// VaultKey arrived in the custody upgrade, so its type carries that package id, for good.
+const VAULT_KEY_TYPE = `${published.custodyId}::grant::VaultKey`;
+export const USDC_TYPE = "0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
 
 const Address = bcs.Address;
 const GrantBcs = bcs.struct("Grant", {
@@ -52,6 +58,15 @@ export async function readGrant(grantId) {
   };
 }
 
+/** USDC held inside the grant, in base units. A grant that was never funded has no vault yet. */
+export async function readVault(grantId) {
+  const key = bcs.struct("VaultKey", { dummy_field: bcs.bool() }).serialize({ dummy_field: false }).toBytes();
+  const fieldId = deriveDynamicFieldID(grantId, VAULT_KEY_TYPE, key);
+  const res = await tatum.getObject({ objectId: fieldId, include: { content: true } }).catch(() => null);
+  if (!res?.object?.content) return 0;
+  return Number(bcs.struct("Field", { id: Address, name: bcs.bool(), value: bcs.u64() }).parse(res.object.content).value);
+}
+
 const fn = (name) => `${PACKAGE_ID}::grant::${name}`;
 
 export function createGrantTx({ agent, weeklyBudget, perCallCap, expiresMs, dormancyMs }) {
@@ -69,6 +84,34 @@ export function recordSpendTx({ grantId, payee, amount, digest }) {
     target: fn("record_spend"),
     arguments: [tx.object(grantId), tx.pure.address(payee), tx.pure.u64(amount), tx.pure.vector("u8", [...Buffer.from(digest)]), tx.object.clock()],
   });
+  return tx;
+}
+
+/** Append a deposit of the agent's own wallet USDC into the grant. */
+export function addDeposit(tx, { grantId, amount }) {
+  tx.moveCall({
+    target: fn("deposit"),
+    typeArguments: [USDC_TYPE],
+    arguments: [tx.object(grantId), coinWithBalance({ type: USDC_TYPE, balance: BigInt(amount) })],
+  });
+  return tx;
+}
+
+/** Pay from the grant; `sweep` first moves that much wallet USDC in, in the same transaction. */
+export function payTx({ grantId, payee, amount, memo, sweep = 0 }) {
+  const tx = new Transaction();
+  if (sweep > 0) addDeposit(tx, { grantId, amount: sweep });
+  tx.moveCall({
+    target: fn("pay"),
+    typeArguments: [USDC_TYPE],
+    arguments: [tx.object(grantId), tx.pure.address(payee), tx.pure.u64(amount), tx.pure.vector("u8", [...Buffer.from(memo)]), tx.object.clock()],
+  });
+  return tx;
+}
+
+export function withdrawTx({ grantId, amount }) {
+  const tx = new Transaction();
+  tx.moveCall({ target: fn("withdraw"), typeArguments: [USDC_TYPE], arguments: [tx.object(grantId), tx.pure.u64(amount)] });
   return tx;
 }
 
