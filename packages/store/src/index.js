@@ -120,3 +120,33 @@ export async function countCredited() {
   const rows = await sql()`select count(*)::int as n from agents where credit_digest is not null`;
   return rows[0].n;
 }
+
+// --- Recurring transfers ---
+
+export async function createSchedule({ owner, grantId, recipient, amount, intervalMs, nextAt }) {
+  const rows = await sql()`insert into schedules (owner, grant_id, recipient, amount, interval_ms, next_at)
+    values (${owner}, ${grantId}, ${recipient}, ${amount}, ${intervalMs}, ${new Date(nextAt).toISOString()}) returning id`;
+  return rows[0].id;
+}
+
+export async function listSchedules(owner) {
+  return sql()`select id, recipient, amount::float8 as amount, interval_ms::float8 as interval_ms, next_at, active, runs, last_digest, last_error, created_at
+    from schedules where owner = ${owner} order by created_at desc`;
+}
+
+export async function cancelSchedule(owner, id) {
+  const rows = await sql()`update schedules set active = false where id = ${id} and owner = ${owner} returning id`;
+  return rows.length > 0;
+}
+
+/** Claim due schedules atomically: their next_at moves forward, so two runners never pay the same one twice. */
+export async function claimDueSchedules(limit = 10) {
+  return sql()`update schedules s set next_at = now() + (s.interval_ms || ' milliseconds')::interval
+    where s.id in (select id from schedules where active and next_at <= now() order by next_at limit ${limit} for update skip locked)
+    returning s.id, s.owner, s.grant_id, s.recipient, s.amount::float8 as amount, s.interval_ms::float8 as interval_ms`;
+}
+
+export async function recordScheduleRun(id, { digest = null, error = null, deactivate = false }) {
+  await sql()`update schedules set runs = runs + ${digest ? 1 : 0}, last_digest = coalesce(${digest}, last_digest),
+    last_error = ${error}, active = active and not ${deactivate} where id = ${id}`;
+}

@@ -31,7 +31,28 @@ export const SERVICES = [
 export const TASK_VALUE = { "wallet-risk": usdc(0.08), "token-holders": usdc(0.08) };
 
 /** Rule-based classifier: the LLM never decides money, and this keeps replays deterministic. */
+const UNIT_MS = { minute: 60_000, hour: 3_600_000, day: 86_400_000, week: 604_800_000 };
+
+/**
+ * "Send 0.05 USDC to 0x... [every 2 days]" -> a transfer. Only Sui addresses (USDC on Sui).
+ * Deliberately strict: money only moves on an unambiguous instruction.
+ */
+export function parseTransfer(ask) {
+  const m = ask.match(/\b(?:send|pay|transfer)\s+\$?(\d+(?:\.\d{1,6})?)\s*(?:usdc|usd|dollars?|\$)?\s+to\s+(0x[0-9a-fA-F]{64})(?![0-9a-fA-F])/i);
+  if (!m) return null;
+  const amount = Math.round(Number(m[1]) * 1e6);
+  if (!(amount > 0)) return null;
+  let intervalMs = null;
+  const every = ask.match(/\bevery\s+(\d+\s*)?(minute|hour|day|week)s?\b/i);
+  if (every) intervalMs = Number(every[1] ?? 1) * UNIT_MS[every[2].toLowerCase()];
+  const word = ask.match(/\b(hourly|daily|weekly)\b/i)?.[1].toLowerCase();
+  if (!every && word) intervalMs = { hourly: UNIT_MS.hour, daily: UNIT_MS.day, weekly: UNIT_MS.week }[word];
+  return { type: "transfer", subject: m[2].toLowerCase(), amount, intervalMs };
+}
+
 export function classify(ask) {
+  const transfer = parseTransfer(ask);
+  if (transfer) return transfer;
   const sui = ask.match(/0x[0-9a-fA-F]{64}/)?.[0];
   const evm = ask.match(/0x[0-9a-fA-F]{40}(?![0-9a-fA-F])/)?.[0];
   const subject = sui ?? evm;

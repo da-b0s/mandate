@@ -35,7 +35,10 @@ function inLane(address, fn) {
   const prev = lanes.get(address) ?? Promise.resolve();
   const run = prev.catch(() => {}).then(fn);
   lanes.set(address, run);
-  run.finally(() => lanes.get(address) === run && lanes.delete(address));
+  // Clean up without re-raising: the caller handles run's error, and a second, unobserved
+  // rejection here would crash the process.
+  const cleanup = () => lanes.get(address) === run && lanes.delete(address);
+  run.then(cleanup, cleanup);
   return run;
 }
 

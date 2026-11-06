@@ -102,6 +102,11 @@ export default function AgentPage() {
             {busy ? "Working…" : "Run task"}
           </button>
         </div>
+        {runs.length === 0 && owner.me?.agent?.grantId && (
+          <p className="small muted" style={{ margin: 0 }}>
+            Your agent can also send money inside your mandate: &quot;Send 0.01 USDC to 0x… every day&quot;.
+          </p>
+        )}
         {runs.length === 0 && (
           <div className="stack small">
             <span className="muted">Try one:</span>
@@ -171,6 +176,12 @@ function StepLine({ s }: { s: Step }) {
       return line("🔎", <>Task: {s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
     case "free-read":
       return line("🆓", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
+    case "transfer":
+      return line("📤", <>Send {usdc(s.amount)} to <code>{short(s.recipient, 10)}</code>{s.intervalMs ? " (recurring)" : ""}</>);
+    case "sent":
+      return line("💸", <>Sent, and recorded on your mandate in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
+    case "scheduled":
+      return line("🔁", <>Scheduled {s.every}; next payment {new Date(s.nextAt).toLocaleString()}</>);
     case "planned":
       return line("🗺", <>Plan: {s.plan.join(" → ") || "nothing to buy"}</>);
     case "skipped":

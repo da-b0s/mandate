@@ -26,4 +26,19 @@ await sql()`create table if not exists agents (
 )`;
 await sql()`alter table receipts add column if not exists owner text`;
 await sql()`create index if not exists receipts_owner on receipts (owner, created_at)`;
+await sql()`create table if not exists schedules (
+  id serial primary key,
+  owner text not null,
+  grant_id text not null,
+  recipient text not null,
+  amount bigint not null,
+  interval_ms bigint not null,
+  next_at timestamptz not null,
+  active boolean not null default true,
+  runs int not null default 0,
+  last_digest text,
+  last_error text,
+  created_at timestamptz not null default now()
+)`;
+await sql()`create index if not exists schedules_due on schedules (active, next_at)`;
 console.log("tables ready");

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
+import { Schedules } from "./schedules";
 
 type Result = { ok: boolean; text: string; digest?: string; memoryBlob?: string };
 
@@ -132,6 +133,8 @@ export default function MandatePage() {
           </div>
         )}
       </div>
+
+      {owner.me?.agent?.grantId && <Schedules />}
 
       <Preferences isOwner={Boolean(isOwner)} />
 

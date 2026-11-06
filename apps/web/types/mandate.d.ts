@@ -13,6 +13,7 @@ declare module "@mandate/agent" {
   export function agentAddress(): string;
   export function appOwner(): Promise<string>;
   export function savePreference(text: string): Promise<any[]>;
+  export function runDueSchedules(): Promise<number>;
   export function getUserAgent(owner: string): Promise<{ owner: string; agentAddress: string; grantId: string | null; credited: boolean } | null>;
   export function createUserAgent(owner: string): Promise<any>;
   export function setUserGrant(owner: string, grantId: string): Promise<any>;
@@ -32,4 +33,8 @@ declare module "@mandate/chain" {
   export function zkLogin(o: { jwt: string; maxEpoch: number; extendedEphemeralPublicKey: string; randomness: string }): Promise<any>;
   export const fullnode: any;
   export const tatum: any;
+}
+declare module "@mandate/store" {
+  export function listSchedules(owner: string): Promise<any[]>;
+  export function cancelSchedule(owner: string, id: number): Promise<boolean>;
 }

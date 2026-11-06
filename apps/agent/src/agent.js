@@ -3,7 +3,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { applyPreferences, decide, rankCandidates } from "@mandate/policy";
 import { readGrant, screenAddress } from "@mandate/chain";
-import { loadReceipt, saveReceipt } from "@mandate/store";
+import { claimDueSchedules, createSchedule, loadReceipt, recordScheduleRun, saveReceipt } from "@mandate/store";
 import { classify, SERVICES, TASK_VALUE } from "./catalog.js";
 import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallPreferences, recallValue, rememberAsync, rememberRating } from "./memory.js";
@@ -11,6 +11,8 @@ import { writeAnswer } from "./answer.js";
 import { archiveReport } from "./archive.js";
 import { activeGrantId } from "./mandate.js";
 import { currentOwner } from "./context.js";
+import { MIN_INTERVAL_MS, sendUsdc } from "./transfer.js";
+import { asUser } from "./users.js";
 
 export { loadReceipt };
 
@@ -33,6 +35,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
     await saveReceipt(receipt);
     return receipt;
   }
+  if (task.type === "transfer") return runTransfer(task, receipt, grantId, log);
 
   const now = Date.now();
   const grant = await readGrant(grantId);
@@ -202,4 +205,104 @@ export async function rateTask(taskId, ratings, { wait = false } = {}) {
     return latest;
   });
   return wait ? settle : r;
+}
+
+const every = (ms) => {
+  const units = [["week", 604_800_000], ["day", 86_400_000], ["hour", 3_600_000], ["minute", 60_000]];
+  const [name, size] = units.find(([, size]) => ms % size === 0) ?? ["minute", 60_000];
+  const n = ms / size;
+  return n === 1 ? `every ${name}` : `every ${n} ${name}s`;
+};
+
+/**
+ * Send USDC for the owner, now and optionally on a schedule. Only a signed-in user's own agent may
+ * do this: the demo agent's wallet is shared, so moving its money to an address someone types is refused.
+ */
+async function runTransfer(task, receipt, grantId, log) {
+  const owner = currentOwner();
+  const usd = (base) => (base / 1e6).toFixed(2);
+  const finish = async (answer) => {
+    receipt.answer = answer;
+    receipt.totalSpent = receipt.payments.reduce((s, p) => s + p.amount, 0);
+    log({ step: "done", totalSpent: receipt.totalSpent });
+    await saveReceipt(receipt);
+    await rememberAsync(NS.receipts, "receipt", receipt.taskId, {
+      at: new Date().toISOString(),
+      ask: receipt.ask,
+      type: "transfer",
+      currency: "USDC",
+      recipient: task.subject,
+      totalUsdc: usd(receipt.totalSpent),
+      payments: receipt.payments.map((p) => ({ usdc: usd(p.amount), digest: p.digest })),
+      denied: receipt.denied,
+      schedule: receipt.schedule ?? null,
+      answer,
+      grant: grantId,
+    }).catch(() => null);
+    return receipt;
+  };
+
+  if (!owner) return finish("Sending money is only available with your own agent. Sign in, set up your mandate, and ask again.");
+  if (task.intervalMs !== null && task.intervalMs < MIN_INTERVAL_MS) return finish("Recurring payments must be at least an hour apart.");
+
+  log({ step: "transfer", recipient: task.subject, amount: task.amount, intervalMs: task.intervalMs });
+  const r = await sendUsdc({ grantId, recipient: task.subject, amount: task.amount, log });
+  if (r.denied) {
+    receipt.denied.push({ service: "transfer", ...r.denied });
+    log({ step: "denied", service: "transfer", reason: r.denied.reason, detail: r.denied.detail });
+  } else {
+    // The transfer and its record_spend are the same transaction, so recordDigest is that digest.
+    receipt.payments.push({ service: "transfer", amount: r.amount, payee: r.recipient, digest: r.digest, recordDigest: r.digest, verifiedVia: "tatum-grpc", delivered: true });
+  }
+
+  if (task.intervalMs) {
+    const nextAt = Date.now() + task.intervalMs;
+    const id = await createSchedule({ owner, grantId, recipient: task.subject, amount: task.amount, intervalMs: task.intervalMs, nextAt });
+    receipt.schedule = { id, intervalMs: task.intervalMs, nextAt: new Date(nextAt).toISOString() };
+    log({ step: "scheduled", id, every: every(task.intervalMs), nextAt: receipt.schedule.nextAt });
+  }
+
+  const sent = r.denied
+    ? `I did not send ${usd(task.amount)} USDC to ${task.subject.slice(0, 10)}…: ${r.denied.detail} (${r.denied.reason}).`
+    : `Sent ${usd(r.amount)} USDC to ${task.subject.slice(0, 10)}…, recorded on your mandate in the same transaction.`;
+  const plan = task.intervalMs
+    ? ` I will repeat this ${every(task.intervalMs)}, within your mandate's limits, until you cancel it on the Mandate page or the mandate stops (revoked, expired, or no heartbeat).`
+    : "";
+  return finish(sent + plan);
+}
+
+/** Pay every due schedule once, as its owner's agent. Called by the web server about once a minute. */
+export async function runDueSchedules() {
+  const due = await claimDueSchedules();
+  for (const s of due) {
+    try {
+      await asUser(s.owner, async () => {
+        const r = await sendUsdc({ grantId: s.grant_id, recipient: s.recipient, amount: s.amount });
+        // Revoked or expired mandates never recover; budget, dormancy and low funds can, so keep trying.
+        if (r.denied) await recordScheduleRun(s.id, { error: `${r.denied.reason}: ${r.denied.detail}`, deactivate: ["revoked", "expired"].includes(r.denied.reason) });
+        else await recordScheduleRun(s.id, { digest: r.digest });
+        await saveReceipt({
+          taskId: randomUUID().slice(0, 8),
+          owner: s.owner,
+          ask: `Scheduled payment #${s.id}: ${(s.amount / 1e6).toFixed(2)} USDC to ${s.recipient}`,
+          task: { type: "transfer", subject: s.recipient },
+          useMemory: false,
+          grantId: s.grant_id,
+          plan: ["transfer"],
+          memoriesUsed: [],
+          payments: r.denied ? [] : [{ service: "transfer", amount: s.amount, payee: s.recipient, digest: r.digest, recordDigest: r.digest, verifiedVia: "tatum-grpc", delivered: true }],
+          skipped: [],
+          denied: r.denied ? [{ service: "transfer", ...r.denied }] : [],
+          outputs: {},
+          steps: [{ at: new Date().toISOString(), step: r.denied ? "denied" : "sent", schedule: s.id }],
+          answer: r.denied ? `Scheduled payment refused: ${r.denied.detail}` : "Scheduled payment sent.",
+          totalSpent: r.denied ? 0 : s.amount,
+          schedule: { id: s.id },
+        });
+      });
+    } catch (e) {
+      await recordScheduleRun(s.id, { error: String(e.message ?? e).slice(0, 200) });
+    }
+  }
+  return due.length;
 }
