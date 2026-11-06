@@ -6,7 +6,7 @@ import { USDC, sui } from "@suimpp/mpp/server";
 import { InMemoryDigestStore } from "@suimpp/mpp/server";
 import { PgDigestStore } from "@mandate/store";
 import { walletRiskReport } from "./wallet-risk.js";
-import { holderCheck } from "./holders.js";
+import { holderCheck, holderPrecheck } from "./holders.js";
 import { premiumSummary } from "./summary.js";
 
 const PORT = Number(process.env.PORT ?? 4021);
@@ -25,7 +25,12 @@ const payTo = (name) => charger(process.env[`MPP_RECIPIENT_${name}`] || process.
 
 const routes = {
   "/v1/wallet-risk": { price: "0.02", mppx: payTo("WALLET_RISK"), run: (q) => walletRiskReport(q.get("address") ?? "") },
-  "/v1/holders": { price: "0.03", mppx: payTo("HOLDERS"), run: (q) => holderCheck(q.get("token") ?? "", q.get("chain") ?? undefined) },
+  "/v1/holders": {
+    price: "0.03",
+    mppx: payTo("HOLDERS"),
+    precheck: (q) => holderPrecheck(q.get("token") ?? "", q.get("chain") ?? undefined),
+    run: (q) => holderCheck(q.get("token") ?? "", q.get("chain") ?? undefined),
+  },
   "/v1/summary": { price: "0.05", mppx: payTo("SUMMARY"), run: (q) => premiumSummary(q.get("address") ?? "") },
 };
 
@@ -39,6 +44,13 @@ http
       return res.end(JSON.stringify({ error: "not found", routes: Object.keys(routes) }));
     }
     try {
+      // Never quote for work we already know we cannot do.
+      const refusal = await route.precheck?.(url.searchParams);
+      if (refusal) {
+        res.statusCode = 422;
+        res.setHeader("content-type", "application/json");
+        return res.end(JSON.stringify({ error: refusal }));
+      }
       const paid = await Mppx.toNodeListener(route.mppx.charge({ amount: route.price }))(req, res);
       if (paid.status === 402) return;
       res.setHeader("content-type", "application/json");
