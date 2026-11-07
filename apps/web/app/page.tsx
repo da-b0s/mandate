@@ -199,7 +199,7 @@ function RunView({ run, onRated }: { run: Run; onRated: (r: Record<string, any>)
             <span className="pill ok">spent {usdc(r.totalSpent ?? 0)}</span>
             {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
             {r.denied.length > 0 && <span className="pill bad">denied {r.denied.length}</span>}
-            {r.memoriesUsed.length > 0 && <span className="pill">recalled {r.memoriesUsed.length} memories</span>}
+            {r.memoriesUsed.length > 0 && <span className="pill">recalled {r.memoriesUsed.length} {r.memoriesUsed.length === 1 ? "memory" : "memories"}</span>}
             <Link href={`/receipts/${r.taskId}`}>Full receipt →</Link>
           </div>
           {r.payments.length > 0 && <Rate taskId={r.taskId} payments={r.payments} rated={run.ratings} onRated={onRated} />}
