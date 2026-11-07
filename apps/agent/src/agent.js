@@ -9,6 +9,7 @@ import { GrantDenied, guardedPurchase } from "./pay.js";
 import { NS, recallPreferences, recallValue, rememberAsync, rememberRating } from "./memory.js";
 import { writeAnswer } from "./answer.js";
 import { archiveReport } from "./archive.js";
+import { fmtCoin, swapUsdc } from "./swap.js";
 import { activeGrantId } from "./mandate.js";
 import { currentOwner } from "./context.js";
 import { MIN_INTERVAL_MS, sendUsdc } from "./transfer.js";
@@ -35,6 +36,7 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
     return receipt;
   }
   if (task.type === "transfer") return runTransfer(task, receipt, grantId, log);
+  if (task.type === "swap") return runSwap(task, receipt, grantId, log);
 
   const now = Date.now();
   const grant = await readGrant(grantId);
@@ -194,6 +196,52 @@ const every = (ms) => {
  * Send USDC for the owner, now and optionally on a schedule. Only a signed-in user's own agent may
  * do this: the demo agent's wallet is shared, so moving its money to an address someone types is refused.
  */
+async function runSwap(task, receipt, grantId, log) {
+  const usd = (base) => (base / 1e6).toFixed(2);
+  const done = async (answer) => {
+    receipt.answer = answer;
+    receipt.totalSpent = receipt.payments.reduce((s, p) => s + p.amount, 0);
+    log({ step: "done", totalSpent: receipt.totalSpent });
+    await saveReceipt(receipt);
+    await rememberAsync(NS.receipts, "receipt", receipt.taskId, {
+      at: new Date().toISOString(),
+      ask: receipt.ask,
+      type: "swap",
+      currency: "USDC",
+      into: task.subject,
+      totalUsdc: usd(receipt.totalSpent),
+      payments: receipt.payments.map((p) => ({ usdc: usd(p.amount), digest: p.digest, received: p.received })),
+      denied: receipt.denied,
+      answer,
+      grant: grantId,
+    }).catch(() => null);
+    return receipt;
+  };
+  const owner = currentOwner();
+  if (!owner) return done("Swaps are only available with your own agent, because the coins go to your wallet. Sign in, set up your mandate, and ask again.");
+  if (task.intervalMs !== null && task.intervalMs < MIN_INTERVAL_MS) return done("Recurring swaps must be at least an hour apart.");
+  log({ step: "swap", symbol: task.subject, amount: task.amount });
+  const r = await swapUsdc({ grantId, symbol: task.subject, amount: task.amount, log });
+  if (r.denied) {
+    receipt.denied.push({ service: "swap", ...r.denied });
+    log({ step: "denied", service: "swap", reason: r.denied.reason, detail: r.denied.detail });
+  } else {
+    receipt.payments.push({ service: "swap", amount: r.amount, payee: r.owner, digest: r.digest, recordDigest: r.digest, verifiedVia: "tatum-grpc", delivered: true, received: `${fmtCoin(r.received, r.symbol)} ${r.symbol}` });
+  }
+  if (task.intervalMs) {
+    const nextAt = Date.now() + task.intervalMs;
+    // A schedule's recipient is a Sui address for transfers, or "swap:<COIN>" for a recurring swap.
+    const id = await createSchedule({ owner, grantId, recipient: `swap:${task.subject}`, amount: task.amount, intervalMs: task.intervalMs, nextAt });
+    receipt.schedule = { id, intervalMs: task.intervalMs, nextAt: new Date(nextAt).toISOString() };
+    log({ step: "scheduled", id, every: every(task.intervalMs), nextAt: receipt.schedule.nextAt });
+  }
+  const now = r.denied
+    ? `I did not swap ${usd(task.amount)} USDC into ${task.subject}: ${r.denied.detail}.`
+    : `Swapped ${usd(r.amount)} USDC into ${fmtCoin(r.received, r.symbol)} ${r.symbol}, sent straight to your wallet. The swap counted against your mandate's limits in the same transaction.`;
+  const plan = task.intervalMs ? ` I will buy ${task.subject} with ${usd(task.amount)} USDC ${every(task.intervalMs)}, within your limits, until you cancel it on the Mandate page.` : "";
+  return done(now + plan);
+}
+
 async function runTransfer(task, receipt, grantId, log) {
   const owner = currentOwner();
   const usd = (base) => (base / 1e6).toFixed(2);
@@ -253,25 +301,31 @@ export async function runDueSchedules() {
   for (const s of due) {
     try {
       await asUser(s.owner, async () => {
-        const r = await sendUsdc({ grantId: s.grant_id, recipient: s.recipient, amount: s.amount });
+        const swapInto = s.recipient.startsWith("swap:") ? s.recipient.slice(5) : null;
+        const kind = swapInto ? "swap" : "transfer";
+        const r = swapInto
+          ? await swapUsdc({ grantId: s.grant_id, symbol: swapInto, amount: s.amount })
+          : await sendUsdc({ grantId: s.grant_id, recipient: s.recipient, amount: s.amount });
         // Revoked or expired mandates never recover; budget, dormancy and low funds can, so keep trying.
         if (r.denied) await recordScheduleRun(s.id, { error: `${r.denied.reason}: ${r.denied.detail}`, deactivate: ["revoked", "expired"].includes(r.denied.reason) });
         else await recordScheduleRun(s.id, { digest: r.digest });
         await saveReceipt({
           taskId: randomUUID().slice(0, 8),
           owner: s.owner,
-          ask: `Scheduled payment #${s.id}: ${(s.amount / 1e6).toFixed(2)} USDC to ${s.recipient}`,
-          task: { type: "transfer", subject: s.recipient },
+          ask: swapInto
+            ? `Scheduled swap #${s.id}: ${(s.amount / 1e6).toFixed(2)} USDC into ${swapInto}`
+            : `Scheduled payment #${s.id}: ${(s.amount / 1e6).toFixed(2)} USDC to ${s.recipient}`,
+          task: { type: kind, subject: swapInto ?? s.recipient },
           useMemory: false,
           grantId: s.grant_id,
-          plan: ["transfer"],
+          plan: [kind],
           memoriesUsed: [],
-          payments: r.denied ? [] : [{ service: "transfer", amount: s.amount, payee: s.recipient, digest: r.digest, recordDigest: r.digest, verifiedVia: "tatum-grpc", delivered: true }],
+          payments: r.denied ? [] : [{ service: kind, amount: s.amount, payee: r.owner ?? s.recipient, digest: r.digest, recordDigest: r.digest, verifiedVia: "tatum-grpc", delivered: true, ...(swapInto ? { received: `${fmtCoin(r.received, swapInto)} ${swapInto}` } : {}) }],
           skipped: [],
-          denied: r.denied ? [{ service: "transfer", ...r.denied }] : [],
+          denied: r.denied ? [{ service: kind, ...r.denied }] : [],
           outputs: {},
-          steps: [{ at: new Date().toISOString(), step: r.denied ? "denied" : "sent", schedule: s.id }],
-          answer: r.denied ? `Scheduled payment refused: ${r.denied.detail}` : "Scheduled payment sent.",
+          steps: [{ at: new Date().toISOString(), step: r.denied ? "denied" : swapInto ? "swapped" : "sent", schedule: s.id, digest: r.digest }],
+          answer: r.denied ? `Scheduled ${kind} refused: ${r.denied.detail}` : swapInto ? `Scheduled swap done: ${fmtCoin(r.received, swapInto)} ${swapInto} sent to your wallet.` : "Scheduled payment sent.",
           totalSpent: r.denied ? 0 : s.amount,
           schedule: { id: s.id },
         });

@@ -6,16 +6,17 @@
     ".": "./src/index.js"
   },
   "dependencies": {
+    "@ai-sdk/google": "4.0.111",
     "@mandate/chain": "workspace:*",
     "@mandate/policy": "workspace:*",
+    "@mandate/store": "workspace:*",
     "@mysten-incubation/memwal": "0.1.12",
+    "@mysten/sui": "2.38.0",
     "@suimpp/mpp": "0.9.0",
+    "aftermath-ts-sdk": "6.4.0",
+    "ai": "7.0.162",
     "dotenv": "^17.2.3",
     "mppx": "0.4.12",
-    "viem": "2.57.16",
-    "ai": "7.0.162",
-    "@ai-sdk/google": "4.0.111",
-    "@mandate/store": "workspace:*",
-    "@mysten/sui": "2.38.0"
+    "viem": "2.57.16"
   }
 }

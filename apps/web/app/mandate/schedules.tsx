@@ -19,19 +19,19 @@ export function Schedules() {
   if (!list || list.length === 0) return null;
   return (
     <div className="card stack">
-      <h2>Recurring payments</h2>
+      <h2>Recurring payments and swaps</h2>
       <p className="small muted" style={{ margin: 0 }}>
         Each payment goes through your mandate on Sui. They stop by themselves if you revoke, the mandate expires, or you miss your heartbeat.
       </p>
       <div className="scroll-x">
         <table>
           <thead>
-            <tr><th>To</th><th>Amount</th><th>How often</th><th>Next</th><th>Paid</th><th>Last result</th><th></th></tr>
+            <tr><th>What</th><th>Amount</th><th>How often</th><th>Next</th><th>Paid</th><th>Last result</th><th></th></tr>
           </thead>
           <tbody>
             {list.map((s) => (
               <tr key={s.id}>
-                <td className="mono">{short(s.recipient, 10)}</td>
+                <td>{s.recipient.startsWith("swap:") ? <span>🔄 buy {s.recipient.slice(5)} <span className="small muted">(to you)</span></span> : <span className="mono">{short(s.recipient, 10)}</span>}</td>
                 <td>{usdc(s.amount)}</td>
                 <td>{every(s.interval_ms)}</td>
                 <td className="small">{s.active ? new Date(s.next_at).toLocaleString() : <span className="pill">stopped</span>}</td>

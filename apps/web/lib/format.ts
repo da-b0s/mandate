@@ -4,6 +4,7 @@ export const SERVICE_NAMES: Record<string, string> = {
   summary: "Premium Summariser",
   holders: "Token Holder Check",
   transfer: "Transfer",
+  swap: "Swap",
 };
 export const serviceName = (s: string) => SERVICE_NAMES[s] ?? s;
 export const TASK_TYPES: Record<string, string> = { "wallet-risk": "for wallet checks", "token-holders": "for token checks" };

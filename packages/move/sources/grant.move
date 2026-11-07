@@ -34,6 +34,7 @@ const EWrongVersion: u64 = 8;
 const EZeroAmount: u64 = 9;
 const ENotUsdc: u64 = 10;
 const EInsufficientFunds: u64 = 11;
+const EWrongTicket: u64 = 12;
 
 /// Limits are denominated in USDC, so nothing else may enter the vault.
 const USDC_TYPE: vector<u8> = b"dba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC";
@@ -60,6 +61,12 @@ public struct Grant has key {
 
 /// Dynamic field on the Grant holding its Balance<USDC>.
 public struct VaultKey has copy, drop, store {}
+
+/// Proof that a swap took money out of this grant. It has no abilities, so the transaction that
+/// opened the swap must close it with `finish_swap`, which hands the output to the owner.
+public struct SwapTicket { grant: ID, amount_in: u64 }
+
+public struct Swapped has copy, drop { grant: ID, amount_in: u64, coin_out: ascii::String, amount_out: u64 }
 
 public struct Deposited has copy, drop { grant: ID, from: address, amount: u64 }
 
@@ -213,6 +220,39 @@ entry fun withdraw<T>(g: &mut Grant, amount: u64, ctx: &mut TxContext) {
     let to = g.owner;
     transfer::public_transfer(out, to);
     event::emit(Withdrawn { grant: object::id(g), to, amount });
+}
+
+/// Agent starts a swap: the amount counts against every limit like a payment (with the owner as
+/// payee, so the owner can cap swaps with set_service_cap on their own address), and the USDC comes
+/// out of the vault for an exchange route in the same transaction.
+public fun begin_swap<T>(
+    g: &mut Grant,
+    amount: u64,
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (Coin<T>, SwapTicket) {
+    assert!(g.version == VERSION, EWrongVersion);
+    assert_usdc<T>();
+    assert!(ctx.sender() == g.agent, ENotAgent);
+    let owner = g.owner;
+    apply_spend(g, owner, amount, b"swap", clock);
+    let funds = take<T>(g, amount, ctx);
+    (funds, SwapTicket { grant: object::id(g), amount_in: amount })
+}
+
+/// Agent finishes the swap: whatever the route produced goes to the owner, never to the agent.
+public fun finish_swap<O>(g: &Grant, ticket: SwapTicket, out: Coin<O>) {
+    let SwapTicket { grant, amount_in } = ticket;
+    assert!(grant == object::id(g), EWrongTicket);
+    let amount_out = out.value();
+    assert!(amount_out > 0, EZeroAmount);
+    transfer::public_transfer(out, g.owner);
+    event::emit(Swapped {
+        grant,
+        amount_in,
+        coin_out: type_name::with_defining_ids<O>().into_string(),
+        amount_out,
+    });
 }
 
 fun take<T>(g: &mut Grant, amount: u64, ctx: &mut TxContext): Coin<T> {

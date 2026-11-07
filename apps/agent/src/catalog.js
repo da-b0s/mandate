@@ -42,17 +42,30 @@ export function parseTransfer(ask) {
   if (!m) return null;
   const amount = Math.round(Number(m[1]) * 1e6);
   if (!(amount > 0)) return null;
-  let intervalMs = null;
+  return { type: "transfer", subject: m[2].toLowerCase(), amount, intervalMs: parseInterval(ask) };
+}
+
+/** "every 2 days", "daily", "every week" -> milliseconds, or null for a one-off. */
+function parseInterval(ask) {
   const every = ask.match(/\bevery\s+(\d+\s*)?(minute|hour|day|week)s?\b/i);
-  if (every) intervalMs = Number(every[1] ?? 1) * UNIT_MS[every[2].toLowerCase()];
+  if (every) return Number(every[1] ?? 1) * UNIT_MS[every[2].toLowerCase()];
   const word = ask.match(/\b(hourly|daily|weekly)\b/i)?.[1].toLowerCase();
-  if (!every && word) intervalMs = { hourly: UNIT_MS.hour, daily: UNIT_MS.day, weekly: UNIT_MS.week }[word];
-  return { type: "transfer", subject: m[2].toLowerCase(), amount, intervalMs };
+  return word ? { hourly: UNIT_MS.hour, daily: UNIT_MS.day, weekly: UNIT_MS.week }[word] : null;
+}
+
+/** "Swap 0.05 USDC to SUI", "buy 0.1 USDC of WAL", "convert 1 usdc into deep" -> a swap. */
+export function parseSwap(ask) {
+  const m = ask.match(/\b(?:swap|convert|exchange|buy|trade)\s+\$?(\d+(?:\.\d{1,6})?)\s*(?:usdc|usd|dollars?|\$)?\s*(?:worth\s+)?(?:of|to|for|into|in)\s+(sui|wal|deep)\b/i);
+  if (!m) return null;
+  const amount = Math.round(Number(m[1]) * 1e6);
+  return amount > 0 ? { type: "swap", subject: m[2].toUpperCase(), amount, intervalMs: parseInterval(ask) } : null;
 }
 
 export function classify(ask) {
   const transfer = parseTransfer(ask);
   if (transfer) return transfer;
+  const swap = parseSwap(ask);
+  if (swap) return swap;
   const sui = ask.match(/0x[0-9a-fA-F]{64}/)?.[0];
   const evm = ask.match(/0x[0-9a-fA-F]{40}(?![0-9a-fA-F])/)?.[0];
   const subject = sui ?? evm;

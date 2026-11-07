@@ -106,7 +106,7 @@ export default function AgentPage() {
         </div>
         {runs.length === 0 && owner.me?.agent?.grantId && (
           <p className="small muted" style={{ margin: 0 }}>
-            Your agent can also send money inside your mandate: &quot;Send 0.01 USDC to 0x… every day&quot;.
+            Your agent can also move money inside your mandate: &quot;Send 0.01 USDC to 0x… every day&quot; or &quot;Swap 0.05 USDC to SUI every week&quot;.
           </p>
         )}
         {runs.length === 0 && (
@@ -226,6 +226,12 @@ function StepLine({ s }: { s: Step }) {
       return line("📤", <>Send {usdc(s.amount)} to <code>{short(s.recipient, 10)}</code>{s.intervalMs ? " (recurring)" : ""}</>);
     case "sent":
       return line("💸", <>Sent, and recorded on your mandate in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
+    case "swap":
+      return line("🔄", <>Swap {usdc(s.amount)} into {s.symbol}, delivered to your wallet</>);
+    case "swap-quote":
+      return line("🧾", <>Best route via Aftermath: about {(Number(s.expected) / 10 ** (s.symbol === "DEEP" ? 6 : 9)).toFixed(4)} {s.symbol} <span className="muted">(max 1% slippage)</span></>);
+    case "swapped":
+      return line("💱", <>Swapped from the mandate; limits checked and coins sent to the owner in one transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
     case "scheduled":
       return line("🔁", <>Scheduled {s.every}; next payment {new Date(s.nextAt).toLocaleString()}</>);
     case "planned":

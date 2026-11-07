@@ -1,11 +1,11 @@
 {
   "network": "mainnet",
-  "packageId": "0x8c54c836705795a63c6bd1a8432e0b48a97ae58084e36db839515e139ba3b5be",
+  "packageId": "0xef2d8871cd2efb49fda1dd5da9a548eb65605b27f451cd9053458b3ba9f22657",
   "upgradeCap": "0xdb09e4252c744870f7ee2f3802e27807d147a80d1173358fc303e648dc372111",
   "digest": "6sfEdFpVsK4fjWf5WaroobPhS2S3cQ4fbMwTLTKDcmH3",
   "publishedAt": "2026-11-03T10:11:58.413Z",
   "originalId": "0x5065412934bf6d7e344656972694e5f0c84a5c02c05472787076f4bdc72b9993",
   "custodyId": "0x8c54c836705795a63c6bd1a8432e0b48a97ae58084e36db839515e139ba3b5be",
-  "upgradeDigest": "4nJrsJJbiNX8La8hjjfVtdizG16eMvckNApvFCoSMtc5",
-  "upgradedAt": "2026-11-06T11:46:42.804Z"
+  "upgradeDigest": "5KyvmFD1UhT1RrrG5tdP5zDBZtfkdHJinLpX6EdovTQs",
+  "upgradedAt": "2026-11-07T19:46:42.053Z"
 }
