@@ -1,7 +1,7 @@
 // Everything a judge needs to check, gathered from chain (via Tatum), Walrus Memory and receipts.
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { PACKAGE_ID, readGrant } from "@mandate/chain";
+import { ORIGINAL_PACKAGE_ID, PACKAGE_ID, readGrant, readVault } from "@mandate/chain";
 import published from "../../../packages/move/published.json" with { type: "json" };
 import { memoryCounts } from "./memory.js";
 import { listReceipts } from "./stats.js";
@@ -38,7 +38,13 @@ export function dormancyDemo() {
 export async function proofData() {
   const grantIds = [...new Set([await activeGrantId(), process.env.GRANT_ID, process.env.REPLAY_GRANT_ID].filter(Boolean))];
   const [grants, memories, receipts] = await Promise.all([
-    Promise.all(grantIds.map((id) => readGrant(id).catch((e) => ({ id, error: String(e.message) })))),
+    Promise.all(
+      grantIds.map((id) =>
+        Promise.all([readGrant(id), readVault(id).catch(() => 0)])
+          .then(([g, held]) => ({ ...g, held }))
+          .catch((e) => ({ id, error: String(e.message) })),
+      ),
+    ),
     memoryCounts().catch((e) => ({ error: String(e.message) })),
     listReceipts({ light: true }),
   ]);
@@ -47,9 +53,10 @@ export async function proofData() {
   );
   const valueBlobs = receipts.flatMap((r) => Object.entries(r.ratings ?? {}).map(([service, v]) => ({ taskId: r.taskId, service, ...v })).filter((v) => v.valueBlob));
   return {
-    package: { id: PACKAGE_ID, publishDigest: published.digest },
+    package: { id: PACKAGE_ID, originalId: ORIGINAL_PACKAGE_ID, publishDigest: published.digest, upgradeDigest: published.upgradeDigest ?? null },
     grants,
-    memories,
+    // Development scratch namespaces are real but say nothing about the product.
+    memories: Array.isArray(memories) ? memories.filter((n) => !/spike|selftest|cachetest/.test(n.name)) : memories,
     payments: payments.reverse(),
     valueBlobs: valueBlobs.reverse(),
     replay: replayRuns(),

@@ -43,7 +43,7 @@ export const LCB_FLOOR = 0.35;
 
 export function valueCheck(price: number, v: ValueEstimate, taskValue: number): ValueDecision {
   if (v.n >= MIN_OBS && v.lcb < LCB_FLOOR) {
-    return { pay: false, reason: "low_value", detail: `lcb ${v.lcb.toFixed(2)} < ${LCB_FLOOR} after ${v.n} calls` };
+    return { pay: false, reason: "low_value", detail: `useful in about ${Math.round(v.pUseful * 100)}% of the last ${v.n} paid calls` };
   }
   // Too little evidence to judge: pay and learn, rather than skip on the prior alone.
   if (v.n < MIN_OBS) return { pay: true };

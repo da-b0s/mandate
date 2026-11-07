@@ -21,7 +21,7 @@ export function proposeCap(
   // Same evidence bar as the skip rule: once the agent stops paying a service, it should
   // also ask the owner to make that onchain, or the service never collects more calls.
   if (v.n >= MIN_OBS && v.lcb < 0.2 && currentCap !== 0) {
-    return { payee, currentCap, proposedCap: 0, reason: `rarely useful across ${v.n} paid calls (pessimistic usefulness ${v.lcb.toFixed(2)}); block it` };
+    return { payee, currentCap, proposedCap: 0, reason: `rarely worth it: about ${Math.round(v.pUseful * 100)}% of ${v.n} paid calls were useful, so block it` };
   }
   if (prevCostPerUseful !== undefined && cpu > prevCostPerUseful * 1.25 && currentCap > price) {
     return { payee, currentCap, proposedCap: price, reason: "cost per useful answer is rising; cap at current price" };

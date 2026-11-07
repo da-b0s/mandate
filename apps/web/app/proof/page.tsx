@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { agent } from "@/lib/agent";
 import { asSessionAgent } from "@/lib/session";
-import { short, suiscanObj, suiscanTx, usdc, walruscan } from "@/lib/format";
+import { serviceName, short, suiscanObj, suiscanTx, usdc, walruscan } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Proof" };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -27,7 +28,7 @@ export default async function ProofPage() {
       <div className="grid">
         <Stat label="Payments" value={String(p.payments.length)} note="real USDC on mainnet" />
         <Stat label="Memories on Walrus" value={memTotal == null ? "—" : String(memTotal)} note={`${Array.isArray(p.memories) ? p.memories.length : 0} namespaces`} />
-        <Stat label="Grants" value={String(p.grants.length)} note="onchain spending limits" />
+        <Stat label="Mandates" value={String(p.grants.length)} note="onchain spending limits" />
         <Stat label="Replay runs" value={String(p.replay.length)} note="50 fixed tasks each" />
       </div>
 
@@ -89,20 +90,31 @@ export default async function ProofPage() {
 
       <div className="card stack">
         <h2>Onchain objects</h2>
-        <div className="small">
-          Package <code>mandate::grant</code>:{" "}
-          <a href={suiscanObj(p.package.id)} target="_blank" className="mono">{short(p.package.id, 10)}</a> · published in{" "}
-          <a href={suiscanTx(p.package.publishDigest)} target="_blank" className="mono">{short(p.package.publishDigest, 8)}</a>
+        <div className="small stack">
+          <div>
+            Package <code>mandate::grant</code>, first published as{" "}
+            <a href={suiscanObj(p.package.originalId)} target="_blank" className="mono">{short(p.package.originalId, 10)}</a> in{" "}
+            <a href={suiscanTx(p.package.publishDigest)} target="_blank" className="mono">{short(p.package.publishDigest, 8)}</a>.
+          </div>
+          {p.package.upgradeDigest && (
+            <div>
+              Upgraded to hold funds (custody) as{" "}
+              <a href={suiscanObj(p.package.id)} target="_blank" className="mono">{short(p.package.id, 10)}</a> in{" "}
+              <a href={suiscanTx(p.package.upgradeDigest)} target="_blank" className="mono">{short(p.package.upgradeDigest, 8)}</a>: USDC sits in the
+              mandate, <code>pay</code> checks every limit in the same transaction, and only the owner can <code>withdraw</code>.
+            </div>
+          )}
         </div>
         <div className="scroll-x">
           <table>
             <thead>
-              <tr><th>Grant</th><th>Weekly budget</th><th>Per call</th><th>Spent this week</th><th>Payments recorded</th><th>Total spent</th></tr>
+              <tr><th>Mandate</th><th>Held by contract</th><th>Weekly budget</th><th>Per call</th><th>Spent this week</th><th>Payments recorded</th><th>Total spent</th></tr>
             </thead>
             <tbody>
               {p.grants.map((g: any) => (
                 <tr key={g.id}>
                   <td><a href={suiscanObj(g.id)} target="_blank" className="mono">{short(g.id, 10)}</a></td>
+                  <td>{usdc(g.held ?? 0)}</td>
                   <td>{usdc(g.weeklyBudget)}</td>
                   <td>{usdc(g.perCallCap)}</td>
                   <td>{usdc(g.spentThisWeek)}</td>
@@ -146,13 +158,13 @@ export default async function ProofPage() {
         <div className="scroll-x">
           <table>
             <thead>
-              <tr><th>Task</th><th>Service</th><th>Amount</th><th>Payment</th><th>Verified</th><th>Recorded on grant</th></tr>
+              <tr><th>Task</th><th>Service</th><th>Amount</th><th>Payment</th><th>Verified</th><th>Recorded on mandate</th></tr>
             </thead>
             <tbody>
               {p.payments.map((x: any) => (
                 <tr key={x.digest}>
                   <td><Link href={`/receipts/${x.taskId}`} className="mono">{x.taskId}</Link></td>
-                  <td>{x.service}</td>
+                  <td>{serviceName(x.service)}</td>
                   <td>{usdc(x.amount)}</td>
                   <td><a href={suiscanTx(x.digest)} target="_blank" className="mono">{short(x.digest, 8)}</a></td>
                   <td>{x.verifiedVia === "tatum-grpc" ? "Tatum ✓" : "—"}</td>

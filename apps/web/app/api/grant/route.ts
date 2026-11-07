@@ -11,8 +11,12 @@ export async function GET() {
 
 async function read() {
   const a = await agent();
-  const g = await (await chain()).readGrant(await a.activeGrantId());
+  const c = await chain();
+  const g = await c.readGrant(await a.activeGrantId());
+  // USDC sent to the agent moves into the grant at its next payment, so both count as held.
+  const [vault, { balances }] = await Promise.all([c.readVault(g.id).catch(() => 0), c.tatum.listBalances({ owner: g.agent })]);
+  const held = vault + Number(balances.find((b: any) => b.coinType === c.USDC_TYPE)?.balance ?? 0);
   const now = Date.now();
   const status = g.revoked ? "revoked" : now >= g.expiresMs ? "expired" : now >= g.lastHeartbeatMs + g.dormancyMs ? "dormant" : "active";
-  return Response.json({ ...g, status, readVia: "tatum-grpc", appOwner: await a.appOwner(), agentAddress: a.agentAddress() });
+  return Response.json({ ...g, held, status, readVia: "tatum-grpc", appOwner: await a.appOwner(), agentAddress: a.agentAddress() });
 }

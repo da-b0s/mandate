@@ -121,7 +121,9 @@ export async function runTask({ ask, grantId, useMemory = true, onStep = () => {
   await saveReceipt(receipt);
 
   // Full report (every step and vendor output) archived on Walrus via Tatum; the receipt memory cites it.
-  receipt.report = await archiveReport(receipt);
+  // Only tasks that bought something: an upload costs about 3,000 Tatum credits, and a free answer has
+  // no purchase to prove.
+  receipt.report = receipt.payments.length ? await archiveReport(receipt) : null;
   if (receipt.report) log({ step: "archived", blobId: receipt.report.blobId });
 
   // Memories are read by other tools too (e.g. Claude Code via the Walrus Memory MCP), so they carry

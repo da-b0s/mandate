@@ -4,7 +4,7 @@ import { Nav } from "./nav";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "MANDATE",
+  title: { default: "MANDATE · a prepaid card for your AI agent", template: "%s · MANDATE" },
   description: "An AI agent with a USDC allowance on Sui: hard limits, learned value, a receipt for every purchase.",
 };
 
@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header className="top">
           <div className="wrap">
-            <span className="brand">MANDATE</span>
+            <a href="/" className="brand">MANDATE</a>
             <Nav />
           </div>
         </header>

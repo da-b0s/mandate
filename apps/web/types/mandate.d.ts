@@ -27,6 +27,7 @@ declare module "@mandate/chain" {
   export function heartbeatTx(o: { grantId: string }): any;
   export function withdrawTx(o: { grantId: string; amount: number }): any;
   export function readVault(grantId: string): Promise<number>;
+  export const USDC_TYPE: string;
   export function revokeTx(o: { grantId: string }): any;
   export function createGrantTx(o: { agent: string; weeklyBudget: number; perCallCap: number; expiresMs: number; dormancyMs: number }): any;
   export function buildFor(tx: any, sender: string, o?: { sponsor?: any }): Promise<string>;

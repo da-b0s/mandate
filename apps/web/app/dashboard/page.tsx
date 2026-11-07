@@ -1,15 +1,16 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usdc } from "@/lib/format";
+import { serviceName, usdc } from "@/lib/format";
 
 export default function Dashboard() {
   const [v, setV] = useState<any>(null);
   const [compare, setCompare] = useState(true);
+  const [allTasks, setAllTasks] = useState(false);
   useEffect(() => {
     fetch("/api/value").then((r) => r.json()).then(setV);
   }, []);
-  if (!v) return <p className="muted">Loading…</p>;
+  if (!v) return <p className="muted">Reading receipts…</p>;
 
   const t = v.totals;
   const saved = t.memoryOnWouldHaveCost - t.memoryOnSpent;
@@ -18,7 +19,7 @@ export default function Dashboard() {
   return (
     <div className="stack">
       <div>
-        <h1>What the agent learned</h1>
+        <h1>Value: what the agent learned</h1>
         <p className="muted small" style={{ margin: 0 }}>
           Every number comes from receipts of real mainnet payments. &quot;Wasted&quot; means a paid call you later rated useless.
         </p>
@@ -69,7 +70,7 @@ export default function Dashboard() {
             <tbody>
               {v.services.map((s: any) => (
                 <tr key={s.service}>
-                  <td><strong>{s.service}</strong></td>
+                  <td><strong>{serviceName(s.service)}</strong></td>
                   <td>{usdc(s.price)}</td>
                   <td>{s.calls}</td>
                   <td>{s.useful}</td>
@@ -85,28 +86,38 @@ export default function Dashboard() {
 
       <div className="card stack">
         <h2>Tasks</h2>
+        <p className="small muted" style={{ margin: 0 }}>
+          Click a task for its full receipt. &quot;Wasted&quot; is known once someone rates a paid task; tasks that bought nothing have nothing to rate.
+        </p>
         <div className="scroll-x">
           <table>
             <thead>
               <tr><th>Task</th><th>Memory</th><th>Spent</th><th>Wasted</th><th>Skipped</th></tr>
             </thead>
             <tbody>
-              {[...v.tasks].reverse().map((x: any) => (
+              {[...v.tasks].reverse().slice(0, allTasks ? undefined : TABLE_TASKS).map((x: any) => (
                 <tr key={x.taskId}>
                   <td><Link href={`/receipts/${x.taskId}`} className="mono">{x.taskId}</Link></td>
                   <td>{x.useMemory ? "on" : "off"}</td>
                   <td>{usdc(x.spent)}</td>
-                  <td>{x.rated ? usdc(x.wasted) : <span className="muted">unrated</span>}</td>
-                  <td>{x.skipped.join(", ") || "—"}</td>
+                  <td>{!x.spent ? <span className="muted">—</span> : x.rated ? usdc(x.wasted) : <span className="muted">not rated</span>}</td>
+                  <td>{x.skipped.map(serviceName).join(", ") || "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        {v.tasks.length > TABLE_TASKS && (
+          <div>
+            <button onClick={() => setAllTasks((x) => !x)}>{allTasks ? "Show latest 20" : `Show all ${v.tasks.length} tasks`}</button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+const TABLE_TASKS = 20;
 
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
@@ -175,9 +186,9 @@ function TaskChart({ tasks, compare }: { tasks: any[]; compare: boolean }) {
         <div className="card small" style={{ position: "absolute", top: 0, right: 0, padding: 10, pointerEvents: "none" }}>
           <div className="mono">{h.taskId}</div>
           <div>memory {h.useMemory ? "on" : "off"} · spent {usdc(h.spent)}</div>
-          <div>wasted {h.rated ? usdc(h.wasted) : "unrated"}</div>
+          <div>wasted {!h.spent ? "—" : h.rated ? usdc(h.wasted) : "not rated"}</div>
           {h.useMemory && <div>memory OFF would cost {usdc(h.memoryOffCost)}</div>}
-          {h.skipped.length > 0 && <div>skipped: {h.skipped.join(", ")}</div>}
+          {h.skipped.length > 0 && <div>skipped: {h.skipped.map(serviceName).join(", ")}</div>}
         </div>
       )}
     </div>

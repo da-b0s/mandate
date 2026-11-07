@@ -1,7 +1,7 @@
 "use client";
 import { useOwner } from "@/lib/owner";
 import { useEffect, useState } from "react";
-import { short, suiscanTx, usdc, walruscan } from "@/lib/format";
+import { short, suiscanTx, TASK_TYPES, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
 import { Schedules } from "./schedules";
@@ -95,7 +95,7 @@ export default function MandatePage() {
                   <tr key={r.service + r.taskType}>
                     <td>
                       <strong>{r.name}</strong>
-                      <div className="small muted">{r.taskType}</div>
+                      <div className="small muted">{TASK_TYPES[r.taskType] ?? r.taskType}</div>
                     </td>
                     <td>
                       {r.observations}
@@ -116,7 +116,9 @@ export default function MandatePage() {
                       )}
                     </td>
                     <td>
-                      {r.proposal ? (
+                      {!isOwner && (r.proposal || r.currentCap === 0) ? (
+                        <span className="small muted" title="Limits change only when the mandate's owner signs.">owner signs to approve</span>
+                      ) : r.proposal ? (
                         <button className="primary" disabled={!isOwner || busy !== null} onClick={() => act(r.service, { action: "cap", payee: r.payee, cap: r.proposal.proposedCap })}>
                           {busy === r.service ? "Signing…" : "Approve"}
                         </button>
