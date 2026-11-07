@@ -1,321 +1,170 @@
-"use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { reason, serviceName, short, suiscanTx, usdc, walruscan } from "@/lib/format";
-import { GrantBar } from "./grant-bar";
-import { YourAgent } from "./your-agent";
-import { useOwner } from "@/lib/owner";
+import { agent } from "@/lib/agent";
 
-type Step = { step: string; at?: string; [k: string]: any };
-type Run = { ask: string; useMemory: boolean; steps: Step[]; receipt?: any; error?: string; ratings?: Record<string, any> };
+// Numbers on the homepage come from real receipts and the committed replay; refresh every 5 minutes.
+export const revalidate = 300;
 
-// Ordered so the first one shows a real purchase; the last shows the free check saving money.
-const EXAMPLES = [
-  { tag: "pays a vendor", ask: "Who holds token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48? Any sanctioned holders?" },
-  { tag: "memory decides", ask: "Brief me on the risks of wallet 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13" },
-  { tag: "free check, no spend", ask: "Is wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 safe to trade with?" },
+async function stats() {
+  try {
+    const a = await agent();
+    const runs = a.replayRuns();
+    const off = runs.filter((r: any) => r.mode === "off").at(-1);
+    const on = runs.filter((r: any) => r.mode === "on").at(-1);
+    const receipts = await a.listReceipts({ light: true });
+    const payments = receipts.reduce((n: number, r: any) => n + (r.payments?.length ?? 0), 0);
+    const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
+    return {
+      payments,
+      wasteCut: off && on ? pct(on.totals.wasted, off.totals.wasted) : 86,
+      costCut: off && on ? pct(on.totals.costPerUsefulAnswer, off.totals.costPerUsefulAnswer) : 43,
+    };
+  } catch {
+    return { payments: null, wasteCut: 86, costCut: 43 };
+  }
+}
+
+const CAN = [
+  { icon: "🔎", title: "Buy information", body: "Pays data services a few cents per answer, like checking whether a wallet is linked to scams." },
+  { icon: "📤", title: "Send money", body: "Pays people once, or on a schedule: “send 5 USDC to Ada every week”." },
+  { icon: "🔄", title: "Swap coins", body: "Turns USDC into SUI, WAL or DEEP at the best price, delivered to your wallet." },
+  { icon: "🧠", title: "Learn what's worth it", body: "Remembers your ratings, so it stops paying for sources that never help." },
 ];
 
-export default function AgentPage() {
-  const [ask, setAsk] = useState("");
-  const [useMemory, setUseMemory] = useState(true);
-  const [runs, setRuns] = useState<Run[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [grantKey, setGrantKey] = useState(0);
-  const owner = useOwner();
+const STEPS = [
+  { n: 1, title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent with its own address." },
+  { n: 2, title: "Set its rules", body: "A weekly allowance, a maximum per payment, and an end date. You sign them once." },
+  { n: 3, title: "Add some USDC", body: "A few dollars is plenty. The money sits inside the rules, and you can take it back any time." },
+  { n: 4, title: "Ask in plain words", body: "“Is this wallet safe?”, “Send 2 USDC to …”, “Swap 1 USDC to SUI every Friday”." },
+];
 
-  async function submit(text: string) {
-    if (!text.trim() || busy) return;
-    setBusy(true);
-    setAsk("");
-    const idx = runs.length;
-    setRuns((r) => [...r, { ask: text, useMemory, steps: [] }]);
-    const update = (f: (r: Run) => Run) => setRuns((rs) => rs.map((r, i) => (i === idx ? f(r) : r)));
-    try {
-      const res = await fetch("/api/tasks", { method: "POST", body: JSON.stringify({ ask: text, useMemory }) });
-      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? `HTTP ${res.status}`);
-      if (!res.body) throw new Error(`HTTP ${res.status}`);
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const msg = JSON.parse(buf.slice(0, nl));
-          buf = buf.slice(nl + 1);
-          if (msg.step) update((r) => ({ ...r, steps: [...r.steps, msg.step] }));
-          if (msg.receipt) update((r) => ({ ...r, receipt: msg.receipt }));
-          if (msg.error) update((r) => ({ ...r, error: msg.error }));
-        }
-      }
-    } catch (e) {
-      update((r) => ({ ...r, error: String((e as Error).message) }));
-    } finally {
-      setBusy(false);
-      setGrantKey((k) => k + 1);
-      owner.refreshMe();
-    }
-  }
+const RULES = [
+  ["Weekly allowance", "It can never spend more than this in 7 days."],
+  ["Maximum per payment", "No single payment, transfer or swap can go above it."],
+  ["End date", "After it, every payment is refused."],
+  ["Auto-freeze", "If you don't check in for a while, it stops spending until you do."],
+  ["Stop button", "Revoke the mandate and it can never spend again."],
+  ["Your money back", "Withdraw everything that's left, whenever you like."],
+];
 
+const ASKS = [
+  "Is wallet 0x098B…2f96 safe to trade with?",
+  "Who holds token 0xA0b8…eB48? Any sanctioned holders?",
+  "Send 0.50 USDC to 0x0520…5fa9 every week",
+  "Swap 1 USDC to SUI every Friday",
+];
+
+export default async function Home() {
+  const s = await stats();
   return (
-    <div className="stack">
-      {runs.length === 0 && !owner.me?.agent && <Intro />}
-      <div>
-        <h1>Give the agent a task</h1>
-        <p className="muted small" style={{ margin: 0 }}>
-          It buys data with USDC on Sui, inside limits enforced by your onchain mandate, and remembers which services were worth it.
+    <div className="home">
+      <section className="hero">
+        <div className="eyebrow">Built on Sui · Walrus Memory · Tatum</div>
+        <h1>Give your AI agent a wallet it can&apos;t empty.</h1>
+        <p className="lede">
+          MANDATE is a prepaid card for AI agents. You set the rules once. Your agent pays for information, sends money and swaps coins inside them, and
+          every cent gets a public receipt.
         </p>
-      </div>
-      <YourAgent compact />
-      <GrantBar refreshKey={grantKey} />
-
-      {runs.map((run, i) => (
-        <RunView key={i} run={run} onRated={(ratings) => setRuns((rs) => rs.map((r, j) => (j === i ? { ...r, ratings } : r)))} />
-      ))}
-
-      <div className="card stack">
-        <textarea
-          value={ask}
-          placeholder="e.g. Is wallet 0x… safe to trade with?"
-          onChange={(e) => setAsk(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit(ask);
-            }
-          }}
-        />
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <div className="row">
-            <span className="small muted">Memory</span>
-            <div className="toggle">
-              <button className={useMemory ? "on" : ""} onClick={() => setUseMemory(true)}>
-                ON
-              </button>
-              <button className={!useMemory ? "on" : ""} onClick={() => setUseMemory(false)}>
-                OFF
-              </button>
-            </div>
-          </div>
-          <button className="primary" disabled={busy || !ask.trim()} onClick={() => submit(ask)}>
-            {busy ? "Working…" : "Run task"}
-          </button>
+        <div className="row cta">
+          <Link href="/agent" className="btn primary big">
+            Try the demo, no sign-in
+          </Link>
+          <Link href="/agent?setup=1" className="btn big">
+            Get your own agent →
+          </Link>
         </div>
-        {runs.length === 0 && owner.me?.agent?.grantId && (
-          <p className="small muted" style={{ margin: 0 }}>
-            Your agent can also move money inside your mandate: &quot;Send 0.01 USDC to 0x… every day&quot; or &quot;Swap 0.05 USDC to SUI every week&quot;.
+        <div className="stats">
+          <div>
+            <b>−{s.wasteCut}%</b>
+            <span>wasted spend once it learns</span>
+          </div>
+          <div>
+            <b>−{s.costCut}%</b>
+            <span>cost per useful answer</span>
+          </div>
+          <div>
+            <b>{s.payments ?? "190+"}</b>
+            <span>real payments on Sui mainnet</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="section">What your agent can do</h2>
+        <div className="grid cards">
+          {CAN.map((c) => (
+            <div key={c.title} className="card feature">
+              <div className="ficon">{c.icon}</div>
+              <strong>{c.title}</strong>
+              <p className="small muted">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="section">How it works</h2>
+        <ol className="howto">
+          {STEPS.map((x) => (
+            <li key={x.n} className="card">
+              <span className="num">{x.n}</span>
+              <div>
+                <strong>{x.title}</strong>
+                <p className="small muted">{x.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="split">
+        <div>
+          <h2 className="section">Rules it can&apos;t break</h2>
+          <p className="muted">
+            The rules live in a smart contract on Sui, and your USDC sits inside it. Every payment is checked by the contract in the same step that moves the
+            money. Not by the AI, and not by us: if a payment breaks a rule, it simply doesn&apos;t happen.
           </p>
-        )}
-        {runs.length === 0 && (
-          <div className="stack small">
-            <span className="muted">Try one:</span>
-            {EXAMPLES.map((e) => (
-              <button key={e.ask} style={{ textAlign: "left" }} onClick={() => setAsk(e.ask)}>
-                <span className="pill" style={{ marginRight: 8 }}>{e.tag}</span>
-                {e.ask}
-              </button>
+          <ul className="rules">
+            {RULES.map(([t, b]) => (
+              <li key={t}>
+                <strong>{t}</strong> <span className="muted">{b}</span>
+              </li>
             ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Intro() {
-  return (
-    <div className="card stack" style={{ background: "var(--accent-soft)", borderColor: "transparent" }}>
-      <div>
-        <h1 style={{ fontSize: 26 }}>A prepaid card for your AI agent</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Give an agent real money without giving it a blank cheque. It pays for data in USDC on Sui, only within limits you sign.
-        </p>
-      </div>
-      <div className="grid">
-        <div>
-          <strong>🔒 Limits it can&apos;t override</strong>
-          <div className="small muted">Your USDC sits in a Move contract that checks every payment: weekly budget, per-call cap, expiry, revoke.</div>
+          </ul>
         </div>
-        <div>
-          <strong>🧠 A memory of what&apos;s worth buying</strong>
-          <div className="small muted">Your ratings are stored on Walrus Memory, so it stops paying for sources that never help.</div>
-        </div>
-        <div>
-          <strong>🧾 A receipt for every cent</strong>
-          <div className="small muted">Every payment links to Sui mainnet, verified through Tatum. Try a task below, no sign-in needed.</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Elapsed() {
-  const [s, setS] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setS((x) => x + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return <>{s}s</>;
-}
-
-function RunView({ run, onRated }: { run: Run; onRated: (r: Record<string, any>) => void }) {
-  const r = run.receipt;
-  const free = r && !r.totalSpent && r.outputs?.["tatum-free"];
-  return (
-    <div className="card stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <strong>{run.ask}</strong>
-        <span className={`pill ${run.useMemory ? "" : "warn"}`}>memory {run.useMemory ? "on" : "off"}</span>
-      </div>
-      <ul className="steps">
-        {run.steps.map((s, i) => (
-          <StepLine key={i} s={s} />
-        ))}
-        {!r && !run.error && (
-          <li className="muted">
-            <span className="icon">⏳</span>working… <Elapsed /> <span className="small">(paid tasks settle on Sui and usually take 10–20 s)</span>
-          </li>
-        )}
-      </ul>
-      {run.error && <div className="pill bad">{run.error}</div>}
-      {r && (
-        <>
-          <div className="card" style={{ background: "var(--bg)" }}>
-            <div style={{ whiteSpace: "pre-wrap" }}>{r.answer}</div>
-            <div className="small muted" style={{ marginTop: 8 }}>
-              {free
-                ? "Answered from Tatum's free security check, so nothing was bought"
-                : !r.totalSpent
-                  ? "Nothing was bought for this answer"
-                  : r.answerModel
-                    ? `Written by ${r.answerModel} using only the sources paid for above`
-                    : "Summary of the sources paid for above"}
+        <div className="card chat">
+          <div className="small muted">Things you can ask</div>
+          {ASKS.map((a) => (
+            <div key={a} className="bubble">
+              {a}
             </div>
-          </div>
-          <div className="row small">
-            <span className="pill ok">spent {usdc(r.totalSpent ?? 0)}</span>
-            {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
-            {r.denied.length > 0 && <span className="pill bad">denied {r.denied.length}</span>}
-            {r.memoriesUsed.length > 0 && <span className="pill">recalled {r.memoriesUsed.length} {r.memoriesUsed.length === 1 ? "memory" : "memories"}</span>}
-            <Link href={`/receipts/${r.taskId}`}>Full receipt →</Link>
-          </div>
-          {r.payments.length > 0 && <Rate taskId={r.taskId} payments={r.payments} rated={run.ratings} onRated={onRated} />}
-        </>
-      )}
-    </div>
-  );
-}
-
-function StepLine({ s }: { s: Step }) {
-  const svc = s.service ? <strong>{serviceName(s.service)}</strong> : null;
-  const line = (icon: string, body: React.ReactNode, tone?: string) => (
-    <li style={tone ? { color: `var(--${tone})` } : undefined}>
-      <span className="icon">{icon}</span>
-      <span>{body}</span>
-    </li>
-  );
-  switch (s.step) {
-    case "classified":
-      return line("🔎", <>Task: {({ "wallet-risk": "wallet risk check", "token-holders": "token holder check", transfer: "transfer", unknown: "not recognised" } as any)[s.type] ?? s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
-    case "free-read":
-      return line("🆓", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
-    case "transfer":
-      return line("📤", <>Send {usdc(s.amount)} to <code>{short(s.recipient, 10)}</code>{s.intervalMs ? " (recurring)" : ""}</>);
-    case "sent":
-      return line("💸", <>Sent, and recorded on your mandate in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
-    case "swap":
-      return line("🔄", <>Swap {usdc(s.amount)} into {s.symbol}, delivered to your wallet</>);
-    case "swap-quote":
-      return line("🧾", <>Best route via Aftermath: about {(Number(s.expected) / 10 ** (s.symbol === "DEEP" ? 6 : 9)).toFixed(4)} {s.symbol} <span className="muted">(max 1% slippage)</span></>);
-    case "swapped":
-      return line("💱", <>Swapped from the mandate; limits checked and coins sent to the owner in one transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
-    case "scheduled":
-      return line("🔁", <>Scheduled {s.every}; next payment {new Date(s.nextAt).toLocaleString()}</>);
-    case "planned":
-      return line("🗺", <>Plan: {s.plan.map(serviceName).join(" → ") || "nothing to buy"}</>);
-    case "skipped":
-      return line("⏭", <>Skipped {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "warn");
-    case "denied":
-      return line("⛔", <>Your mandate refused {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "bad");
-    case "buying":
-      return line("🛒", <>Buying {svc} for {usdc(s.price)}</>);
-    case "quote":
-      return line("🧾", <>Quote from {svc}: {usdc(s.amount)} to <code>{short(s.recipient)}</code></>);
-    case "grant-ok":
-      return line("✅", <>Mandate allows it: {usdc(s.spentThisWeek)} of {usdc(s.weeklyBudget)} spent this week <span className="muted">(read via Tatum)</span></>);
-    case "paid":
-      return line("💸", <>Paid {svc} from the mandate; the contract checked the limits in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
-    case "verified":
-      return line("🛡", <>Payment verified through Tatum gRPC</>, "ok");
-    case "recorded":
-      return line("⛓", <>Spend recorded on the grant: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
-    case "delivery-failed":
-      return s.refundWorthy
-        ? line("⚠", <>{svc} took payment but did not deliver (HTTP {s.status}); marked refund-worthy and remembered</>, "bad")
-        : line("ℹ", <>{svc} could not serve this request, so nothing was charged <span className="muted">({s.status})</span></>, "warn");
-    case "archived":
-      return line("🗄", <>Full report archived on Walrus via Tatum Storage: <a href={walruscan(s.blobId)} target="_blank">{short(s.blobId, 8)}</a></>);
-    case "record-failed":
-      return line("⚠", <>Paid, but recording on the grant failed; queued for retry</>, "warn");
-    case "answering":
-      return line("✍", <>Writing the answer</>);
-    case "done":
-      return line("🏁", <>Done</>);
-    default:
-      return null;
-  }
-}
-
-function Rate({ taskId, payments, rated, onRated }: { taskId: string; payments: any[]; rated?: Record<string, any>; onRated: (r: Record<string, any>) => void }) {
-  const [choice, setChoice] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  useEffect(() => setChoice(Object.fromEntries(payments.map((p) => [p.service, "useful"]))), [payments]);
-
-  if (rated) {
-    return (
-      <div className="row small">
-        <span className="muted">Learned (stored on Walrus in the background):</span>
-        {Object.entries(rated).map(([svc, v]: any) => (
-          <span key={svc} className={`pill ${v.rating === "useful" ? "ok" : "bad"}`}>
-            {serviceName(svc)}: {v.rating}
-          </span>
-        ))}
-      </div>
-    );
-  }
-  return (
-    <div className="stack small" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-      <span className="muted">Was each paid source worth it? The agent will remember.</span>
-      {payments.map((p) => (
-        <div key={p.service} className="row">
-          <span style={{ minWidth: 160 }}>{serviceName(p.service)}</span>
-          <div className="toggle">
-            {["useful", "useless"].map((v) => (
-              <button key={v} className={choice[p.service] === v ? "on" : ""} onClick={() => setChoice((c) => ({ ...c, [p.service]: v }))}>
-                {v}
-              </button>
-            ))}
+          ))}
+          <div className="bubble reply">
+            Swapped 1.00 USDC into 1.16 SUI, sent straight to your wallet. Counted against your weekly allowance. Receipt →
           </div>
         </div>
-      ))}
-      <div>
-        <button
-          className="primary"
-          disabled={saving}
-          onClick={async () => {
-            setSaving(true);
-            const res = await fetch(`/api/tasks/${taskId}/rating`, { method: "POST", body: JSON.stringify({ ratings: choice }) });
-            const j = await res.json();
-            setSaving(false);
-            if (j.ratings) onRated(j.ratings);
-          }}
-        >
-          {saving ? "Saving…" : "Save rating"}
-        </button>
-      </div>
+      </section>
+
+      <section className="card proofband">
+        <div>
+          <strong>Don&apos;t take our word for it.</strong>
+          <p className="small muted">
+            Every payment links to Sui mainnet and is double-checked through Tatum. Every memory is stored on Walrus. The 50-task replay that produced the
+            numbers above is public.
+          </p>
+        </div>
+        <Link href="/proof" className="btn">
+          See the proof →
+        </Link>
+      </section>
+
+      <footer className="foot small muted">
+        <span>MANDATE · a hackathon project for Total Recall: Tatum × Walrus Memory</span>
+        <span className="row">
+          <Link href="/agent">Agent</Link>
+          <Link href="/proof">Proof</Link>
+          <Link href="/privacy">Privacy</Link>
+        </span>
+      </footer>
     </div>
   );
 }

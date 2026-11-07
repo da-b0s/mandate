@@ -35,7 +35,7 @@ export default function MandatePage() {
       const signature = await owner.signTransaction(built.bytes);
       const sent = await fetch("/api/owner/submit", { method: "POST", body: JSON.stringify({ bytes: built.bytes, signature, action: body.action }) }).then((r) => r.json());
       if (sent.error) throw new Error(sent.error);
-      setResult({ ok: true, text: `${body.action} confirmed onchain`, digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
+      setResult({ ok: true, text: ({ create: "Rules signed. Your agent now follows them.", cap: "Change approved on Sui.", heartbeat: "Checked in. The auto-freeze timer restarted.", revoke: "Mandate stopped for good.", withdraw: "Your USDC is on its way to your wallet." } as Record<string, string>)[String(body.action)] ?? "Confirmed on Sui", digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
       setRefresh((n) => n + 1);
       await owner.refreshMe();
     } catch (e) {
@@ -49,13 +49,14 @@ export default function MandatePage() {
     <div className="stack">
       <div>
         <h1>Your mandate</h1>
-        <p className="muted small" style={{ margin: 0 }}>
-          The agent can only propose. Limits change when the owner signs, and the Move contract enforces them on Sui.
+        <p className="muted" style={{ margin: 0 }}>
+          The rulebook your agent can&apos;t break, kept in a smart contract on Sui. Here you set the rules, see what the agent suggests changing, and pause it
+          or take your money back.
         </p>
       </div>
       <GrantBar refreshKey={refresh} />
 
-      <YourAgent />
+      <YourAgent onMandatePage />
       {account && data && !isOwner && !owner.me?.agent && (
         <div className="card small">
           <span className="pill warn">
@@ -81,7 +82,10 @@ export default function MandatePage() {
       )}
 
       <div className="card stack">
-        <h2>What the agent proposes</h2>
+        <h2>What the agent suggests</h2>
+        <p className="small muted" style={{ margin: 0 }}>
+          From your ratings, the agent works out which services are worth paying for. It can only suggest; nothing changes until the owner signs.
+        </p>
         {!data ? (
           <p className="muted small">Reading learned value from Walrus Memory…</p>
         ) : (
@@ -147,21 +151,23 @@ export default function MandatePage() {
 
       {isOwner && (
         <div className="card stack">
-          <h2>Dead man&apos;s switch</h2>
+          <h2>Pause, stop or take your money back</h2>
           <p className="small muted" style={{ margin: 0 }}>
-            If the owner stops sending heartbeats, the grant goes dormant and every payment is refused with GRANT_DENIED: dormant. A heartbeat revives it.
+            <strong>Check in</strong> now and then: if you go quiet for longer than your auto-freeze window, the agent stops spending until you check in again.{" "}
+            <strong>Stop for good</strong> revokes the mandate forever. <strong>Withdraw</strong> sends every USDC left in it to your wallet, any time, even
+            after stopping.
           </p>
           <div className="row">
             <button className="primary" disabled={busy !== null} onClick={() => act("heartbeat", { action: "heartbeat" })}>
-              {busy === "heartbeat" ? "Signing…" : "Send heartbeat"}
+              {busy === "heartbeat" ? "Signing…" : "Check in"}
             </button>
             <button
               disabled={busy !== null}
               onClick={() => {
-                if (confirm("Revoke this grant? The agent can never spend under it again. This cannot be undone.")) act("revoke", { action: "revoke" });
+                if (confirm("Stop this mandate for good? The agent can never spend under it again. You can still withdraw what's left. This cannot be undone.")) act("revoke", { action: "revoke" });
               }}
             >
-              {busy === "revoke" ? "Signing…" : "Revoke grant"}
+              {busy === "revoke" ? "Signing…" : "Stop for good"}
             </button>
             <button
               disabled={busy !== null}
@@ -196,20 +202,20 @@ function CreateMandate({ disabled, busy, onCreate }: { disabled: boolean; busy: 
     </label>
   );
   return (
-    <div className="card stack">
-      <h2>New mandate</h2>
+    <div className="card stack" id="rules">
+      <h2>Set your agent&apos;s rules</h2>
       <p className="small muted" style={{ margin: 0 }}>
-        Creates a fresh grant on Sui, signed by you, and the agent switches to it. The old grant keeps its history.
+        You sign these once; the agent can never change them. Signing new rules later replaces the old ones (their history stays on Sui). Gas is on us.
       </p>
       <div className="grid">
-        {field("weeklyUsdc", "Weekly budget (USDC)", "most it can spend in 7 days")}
-        {field("perCallUsdc", "Per-call cap (USDC)", "most for any one purchase")}
-        {field("days", "Expires in (days)", "then every payment is refused")}
-        {field("heartbeatHours", "Heartbeat window (hours)", "freezes if you go quiet this long")}
+        {field("weeklyUsdc", "Weekly allowance (USDC)", "the most it can spend in any 7 days")}
+        {field("perCallUsdc", "Maximum per payment (USDC)", "for any one purchase, transfer or swap")}
+        {field("days", "Valid for (days)", "after this, every payment is refused")}
+        {field("heartbeatHours", "Auto-freeze after (hours)", "if you don't check in for this long")}
       </div>
       <div>
         <button className="primary" disabled={disabled} onClick={() => onCreate(f)}>
-          {busy ? "Signing…" : "Create mandate"}
+          {busy ? "Signing…" : "Sign my rules"}
         </button>
       </div>
     </div>

@@ -14,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header className="top">
           <div className="wrap">
-            <a href="/" className="brand">MANDATE</a>
+            <a href="/" className="brand">
+              <span className="logo">◆</span> MANDATE
+            </a>
             <Nav />
           </div>
         </header>

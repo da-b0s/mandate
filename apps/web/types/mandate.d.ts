@@ -3,7 +3,8 @@ declare module "@mandate/agent" {
   export function runTask(opts: { ask: string; useMemory?: boolean; grantId?: string; onStep?: (s: unknown) => void }): Promise<any>;
   export function rateTask(taskId: string, ratings: Record<string, string>): Promise<any>;
   export function loadReceipt(taskId: string): Promise<any>;
-  export function listReceipts(): Promise<any[]>;
+  export function listReceipts(o?: { light?: boolean }): Promise<any[]>;
+  export function replayRuns(): any[];
   export function valueStats(): Promise<any>;
   export function proofData(): Promise<any>;
   export function capProposals(grantId?: string): Promise<any>;
