@@ -15,42 +15,47 @@ async function stats() {
     const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
     return {
       payments,
+      tasks: receipts.length,
       wasteCut: off && on ? pct(on.totals.wasted, off.totals.wasted) : 86,
       costCut: off && on ? pct(on.totals.costPerUsefulAnswer, off.totals.costPerUsefulAnswer) : 43,
     };
   } catch {
-    return { payments: null, wasteCut: 86, costCut: 43 };
+    return { payments: null, tasks: null, wasteCut: 86, costCut: 43 };
   }
 }
 
-const CAN = [
+const LEFT = [
   { icon: "🔎", title: "Buy information", body: "Pays data services a few cents per answer, like checking whether a wallet is linked to scams." },
   { icon: "📤", title: "Send money", body: "Pays people once, or on a schedule: “send 5 USDC to Ada every week”." },
-  { icon: "🔄", title: "Swap coins", body: "Turns USDC into SUI, WAL or DEEP at the best price, delivered to your wallet." },
-  { icon: "🧠", title: "Learn what's worth it", body: "Remembers your ratings, so it stops paying for sources that never help." },
+];
+const RIGHT = [
+  { icon: "🔄", title: "Swap coins", body: "Turns USDC into SUI, WAL or DEEP at the best price, straight to your wallet." },
+  { icon: "🧠", title: "Learns what's worth it", body: "Remembers your ratings on Walrus, so it stops paying for sources that never help." },
 ];
 
 const STEPS = [
-  { n: 1, title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent with its own address." },
-  { n: 2, title: "Set its rules", body: "A weekly allowance, a maximum per payment, and an end date. You sign them once." },
-  { n: 3, title: "Add some USDC", body: "A few dollars is plenty. The money sits inside the rules, and you can take it back any time." },
-  { n: 4, title: "Ask in plain words", body: "“Is this wallet safe?”, “Send 2 USDC to …”, “Swap 1 USDC to SUI every Friday”." },
+  { icon: "👤", title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent." },
+  { icon: "📏", title: "Set its rules", body: "A weekly allowance and a maximum per payment. Sign once." },
+  { icon: "💵", title: "Add some USDC", body: "A few dollars is plenty. Take it back any time." },
+  { icon: "💬", title: "Chat with it", body: "Ask in plain words. It does the job and shows the receipt." },
 ];
 
 const RULES = [
   ["Weekly allowance", "It can never spend more than this in 7 days."],
-  ["Maximum per payment", "No single payment, transfer or swap can go above it."],
+  ["Maximum per payment", "No single payment, transfer or swap goes above it."],
   ["End date", "After it, every payment is refused."],
-  ["Auto-freeze", "If you don't check in for a while, it stops spending until you do."],
+  ["Auto-freeze", "If you don't check in for a while, it stops until you do."],
   ["Stop button", "Revoke the mandate and it can never spend again."],
-  ["Your money back", "Withdraw everything that's left, whenever you like."],
+  ["Your money back", "Withdraw everything left, whenever you like."],
 ];
 
-const ASKS = [
-  "Is wallet 0x098B…2f96 safe to trade with?",
-  "Who holds token 0xA0b8…eB48? Any sanctioned holders?",
-  "Send 0.50 USDC to 0x0520…5fa9 every week",
-  "Swap 1 USDC to SUI every Friday",
+const FAQ = [
+  ["Do I need a crypto wallet?", "No. Sign in with Google and MANDATE creates a Sui address for you. If you already use a Sui wallet like Slush, you can connect that instead."],
+  ["Can the AI spend more than I allow?", "No. Your USDC is held by a smart contract on Sui, and the contract checks every payment against your rules in the same step that moves the money. A payment that breaks a rule simply fails. Not even we can override it."],
+  ["What if something goes wrong?", "Press Stop for good and the agent can never spend again. Then press Withdraw and everything left goes back to your wallet. Both work at any time."],
+  ["Where do the coins from a swap go?", "Straight to your own wallet, never to the agent. The swap still counts against your weekly allowance."],
+  ["How does it learn?", "After a task, you can rate each paid source as useful or not. Those ratings are stored in Walrus Memory, and next time the agent skips sources that keep disappointing. In our 50-task test this cut wasted spend by 86%."],
+  ["Is this real money?", "Yes. Everything runs on Sui mainnet with real USDC, and every payment links to a public receipt you can check yourself."],
 ];
 
 export default async function Home() {
@@ -58,21 +63,24 @@ export default async function Home() {
   return (
     <div className="home">
       <section className="hero">
-        <div className="eyebrow">Built on Sui · Walrus Memory · Tatum</div>
-        <h1>Give your AI agent a wallet it can&apos;t empty.</h1>
+        <div className="orb" />
+        <span className="eyebrow">Built on Sui · Walrus Memory · Tatum</span>
+        <h1>
+          Give your AI agent
+          <br />a <em>wallet it can&apos;t empty</em>
+        </h1>
         <p className="lede">
-          MANDATE is a prepaid card for AI agents. You set the rules once. Your agent pays for information, sends money and swaps coins inside them, and
-          every cent gets a public receipt.
+          A prepaid card for AI agents. You set the rules once. Your agent pays, sends and swaps inside them, and every cent gets a public receipt.
         </p>
         <div className="row cta">
           <Link href="/agent" className="btn primary big">
-            Try the demo, no sign-in
+            Try the demo
           </Link>
           <Link href="/agent?setup=1" className="btn big">
-            Get your own agent →
+            Get your own agent ↗
           </Link>
         </div>
-        <div className="stats">
+        <div className="statstrip">
           <div>
             <b>−{s.wasteCut}%</b>
             <span>wasted spend once it learns</span>
@@ -82,89 +90,170 @@ export default async function Home() {
             <span>cost per useful answer</span>
           </div>
           <div>
-            <b>{s.payments ?? "190+"}</b>
+            <b>{s.payments ?? "200+"}</b>
             <span>real payments on Sui mainnet</span>
+          </div>
+          <div>
+            <b>{s.tasks ?? "170+"}</b>
+            <span>tasks completed</span>
           </div>
         </div>
       </section>
 
       <section>
-        <h2 className="section">What your agent can do</h2>
-        <div className="grid cards">
-          {CAN.map((c) => (
-            <div key={c.title} className="card feature">
-              <div className="ficon">{c.icon}</div>
-              <strong>{c.title}</strong>
-              <p className="small muted">{c.body}</p>
-            </div>
-          ))}
+        <h2 className="center-h">One agent. Real money. Hard limits.</h2>
+        <p className="center-p">Everything it does goes through your mandate, the rulebook it can&apos;t break.</p>
+        <div className="showcase">
+          <div className="side">
+            {LEFT.map((f) => (
+              <Feat key={f.title} {...f} />
+            ))}
+          </div>
+          <Phone />
+          <div className="side">
+            {RIGHT.map((f) => (
+              <Feat key={f.title} {...f} />
+            ))}
+          </div>
         </div>
       </section>
 
       <section>
-        <h2 className="section">How it works</h2>
-        <ol className="howto">
-          {STEPS.map((x) => (
-            <li key={x.n} className="card">
-              <span className="num">{x.n}</span>
-              <div>
-                <strong>{x.title}</strong>
-                <p className="small muted">{x.body}</p>
-              </div>
-            </li>
+        <h2 className="center-h">How it works</h2>
+        <p className="center-p">From sign-in to your first task in about two minutes.</p>
+        <div className="steps4">
+          {STEPS.map((x, i) => (
+            <div key={x.title} className="glass step4">
+              <div className="ficon">{x.icon}</div>
+              <div className="small faint">Step {i + 1}</div>
+              <strong>{x.title}</strong>
+              <p>{x.body}</p>
+            </div>
           ))}
-        </ol>
+        </div>
+        <div className="row cta">
+          <Link href="/agent?setup=1" className="btn primary">
+            Start now
+          </Link>
+        </div>
       </section>
 
-      <section className="split">
+      <section className="rulesgrid">
         <div>
-          <h2 className="section">Rules it can&apos;t break</h2>
-          <p className="muted">
+          <div className="shead" style={{ marginBottom: 0 }}>
+            <h2>
+              Rules it can&apos;t
+              <br />
+              break. By design.
+            </h2>
+          </div>
+          <p className="muted" style={{ maxWidth: 460 }}>
             The rules live in a smart contract on Sui, and your USDC sits inside it. Every payment is checked by the contract in the same step that moves the
-            money. Not by the AI, and not by us: if a payment breaks a rule, it simply doesn&apos;t happen.
+            money. Not by the AI, not by us.
           </p>
           <ul className="rules">
             {RULES.map(([t, b]) => (
               <li key={t}>
-                <strong>{t}</strong> <span className="muted">{b}</span>
+                <span>
+                  <strong>{t}</strong> <span className="muted">{b}</span>
+                </span>
               </li>
             ))}
           </ul>
         </div>
-        <div className="card chat">
-          <div className="small muted">Things you can ask</div>
-          {ASKS.map((a) => (
-            <div key={a} className="bubble">
-              {a}
+        <div className="glass" style={{ padding: 24 }}>
+          <div className="mcard" style={{ fontSize: 13, padding: 22 }}>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <span className="muted">MANDATE · agent card</span>
+              <span className="pill ok">active</span>
             </div>
-          ))}
-          <div className="bubble reply">
-            Swapped 1.00 USDC into 1.16 SUI, sent straight to your wallet. Counted against your weekly allowance. Receipt →
+            <b style={{ fontSize: 34, margin: "14px 0" }}>1.38 USDC</b>
+            <div className="muted" style={{ marginBottom: 8 }}>0.62 of 2.00 spent this week</div>
+            <div className="mbar">
+              <i />
+            </div>
+            <div className="row muted" style={{ justifyContent: "space-between", marginTop: 16 }}>
+              <span>max 0.10 per payment</span>
+              <span>valid 30 days</span>
+            </div>
           </div>
+          <p className="small muted" style={{ margin: "16px 4px 0" }}>
+            What you see in Settings: what&apos;s held, what&apos;s left this week, and the buttons to pause, stop or withdraw.
+          </p>
         </div>
       </section>
 
-      <section className="card proofband">
-        <div>
-          <strong>Don&apos;t take our word for it.</strong>
-          <p className="small muted">
-            Every payment links to Sui mainnet and is double-checked through Tatum. Every memory is stored on Walrus. The 50-task replay that produced the
-            numbers above is public.
-          </p>
+      <section>
+        <h2 className="center-h">Questions</h2>
+        <div className="faq">
+          {FAQ.map(([q, a]) => (
+            <details key={q} className="glass">
+              <summary>{q}</summary>
+              <p>{a}</p>
+            </details>
+          ))}
         </div>
-        <Link href="/proof" className="btn">
-          See the proof →
-        </Link>
+      </section>
+
+      <section className="glass final">
+        <h2 className="center-h">Try it in your browser. No sign-in.</h2>
+        <p className="center-p">Watch the demo agent buy information within its limits, or check every payment yourself.</p>
+        <div className="row cta">
+          <Link href="/agent" className="btn primary big">
+            Open the demo
+          </Link>
+          <Link href="/proof" className="btn big">
+            See the proof
+          </Link>
+        </div>
       </section>
 
       <footer className="foot small muted">
-        <span>MANDATE · a hackathon project for Total Recall: Tatum × Walrus Memory</span>
-        <span className="row">
-          <Link href="/agent">Agent</Link>
+        <span>MANDATE · Total Recall: Tatum × Walrus Memory</span>
+        <span className="row" style={{ gap: 18 }}>
+          <Link href="/agent">Chat</Link>
+          <Link href="/mandate">Settings</Link>
           <Link href="/proof">Proof</Link>
           <Link href="/privacy">Privacy</Link>
         </span>
       </footer>
+    </div>
+  );
+}
+
+function Feat({ icon, title, body }: { icon: string; title: string; body: string }) {
+  return (
+    <div className="feat">
+      <strong>
+        <span className="ficon">{icon}</span>
+        {title}
+      </strong>
+      <p>{body}</p>
+    </div>
+  );
+}
+
+function Phone() {
+  return (
+    <div className="phone">
+      <div className="screen">
+        <div className="top">
+          <span>9:41</span>
+          <span>MANDATE</span>
+        </div>
+        <div className="mcard">
+          <span className="muted">Held by your mandate</span>
+          <b>1.38 USDC</b>
+          <div className="mbar">
+            <i />
+          </div>
+          <div className="muted" style={{ marginTop: 6 }}>0.62 of 2.00 this week</div>
+        </div>
+        <div className="mmsg me">Swap 1 USDC to SUI every Friday</div>
+        <div className="mmsg ai">Done: 1.00 USDC → 1.16 SUI, sent to your wallet. I&apos;ll repeat it every week within your limits.</div>
+        <div className="mmsg me">Is wallet 0x098B…2f96 safe?</div>
+        <div className="mmsg ai">Not safe: it&apos;s on the OFAC sanctions list. Answered by a free check, so I spent nothing.</div>
+      </div>
     </div>
   );
 }

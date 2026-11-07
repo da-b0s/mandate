@@ -3,8 +3,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
-  ["/agent", "Agent"],
-  ["/mandate", "Mandate"],
+  ["/agent", "Chat"],
+  ["/mandate", "Settings"],
   ["/dashboard", "Value"],
   ["/proof", "Proof"],
 ];

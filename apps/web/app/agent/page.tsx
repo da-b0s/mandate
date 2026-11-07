@@ -1,8 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { reason, serviceName, short, suiscanTx, usdc, walruscan } from "@/lib/format";
-import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
 import { useOwner } from "@/lib/owner";
 
@@ -11,16 +10,16 @@ type Run = { ask: string; useMemory: boolean; steps: Step[]; receipt?: any; erro
 
 // Money-moving examples, shown once the visitor has their own funded mandate (they go to the owner).
 const OWNER_EXAMPLES = [
-  { tag: "swap", ask: "Swap 0.05 USDC to SUI" },
-  { tag: "recurring", ask: "Buy 0.05 USDC of WAL every week" },
-  { tag: "send", ask: "Send 0.01 USDC to 0x0520a2fd4beef5fac411f9b8290bd090d36444f01bb8cc8a8fad9bbc1e5ce9fa" },
+  { title: "Swap 0.05 USDC to SUI", note: "coins go to your wallet", ask: "Swap 0.05 USDC to SUI" },
+  { title: "Buy WAL every week", note: "a recurring swap", ask: "Buy 0.05 USDC of WAL every week" },
 ];
 
 // Ordered so the first one shows a real purchase; the last shows the free check saving money.
 const EXAMPLES = [
-  { tag: "pays a vendor", ask: "Who holds token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48? Any sanctioned holders?" },
-  { tag: "memory decides", ask: "Brief me on the risks of wallet 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13" },
-  { tag: "free check, no spend", ask: "Is wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 safe to trade with?" },
+  { title: "Check a token's holders", note: "pays a data service 0.03 USDC", ask: "Who holds token 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48? Any sanctioned holders?" },
+  { title: "Is this wallet safe?", note: "a free check answers it, nothing spent", ask: "Is wallet 0x098B716B8Aaf21512996dC57EB0615e2383E2f96 safe to trade with?" },
+  { title: "Brief me on a wallet", note: "memory decides what's worth buying", ask: "Brief me on the risks of wallet 0xf517db898c66fd87407bcb39f8644093628b01cea21afee3e9e4252a0d137a13" },
+  { title: "Send money", note: "with your own agent", ask: "Send 0.01 USDC to 0x0520a2fd4beef5fac411f9b8290bd090d36444f01bb8cc8a8fad9bbc1e5ce9fa" },
 ];
 
 export default function AgentPage() {
@@ -30,6 +29,11 @@ export default function AgentPage() {
   const [busy, setBusy] = useState(false);
   const [grantKey, setGrantKey] = useState(0);
   const owner = useOwner();
+  const endRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
+  const mine = Boolean(owner.me?.agent?.grantId);
+
+  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [runs]);
 
   async function submit(text: string) {
     if (!text.trim() || busy) return;
@@ -67,26 +71,68 @@ export default function AgentPage() {
     }
   }
 
+  const examples = mine ? [...OWNER_EXAMPLES, ...EXAMPLES.slice(0, 2)] : EXAMPLES;
+
   return (
-    <div className="stack">
-      <div>
-        <h1>{owner.me?.agent?.grantId ? "Your agent" : "Give the agent a task"}</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Ask in plain words. It checks wallets and tokens, sends money and swaps coins, always inside the rules of its mandate.
-        </p>
+    <div className="chat-page">
+      <div className="chat-top">
+        <MandateChip refreshKey={grantKey} mine={mine} />
+        <div className="row small">
+          <span className="muted" title="ON: it uses what it learned to skip sources that weren't worth it. OFF: it pays for everything it planned, so you can compare.">
+            Memory
+          </span>
+          <div className="toggle">
+            <button className={useMemory ? "on" : ""} onClick={() => setUseMemory(true)}>On</button>
+            <button className={!useMemory ? "on" : ""} onClick={() => setUseMemory(false)}>Off</button>
+          </div>
+        </div>
       </div>
-      <YourAgent compact />
-      <GrantBar refreshKey={grantKey} label={owner.me?.agent?.grantId ? "Your mandate" : "Demo agent's mandate"} />
 
-      {runs.map((run, i) => (
-        <RunView key={i} run={run} onRated={(ratings) => setRuns((rs) => rs.map((r, j) => (j === i ? { ...r, ratings } : r)))} />
-      ))}
+      <div className="thread">
+        {runs.length === 0 ? (
+          <div className="empty">
+            <span className="logo" />
+            <h1>{mine ? "What should your agent do?" : "Ask the agent anything"}</h1>
+            <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
+              It checks wallets and tokens, sends money and swaps coins, always inside the rules of its mandate. Every payment gets a receipt.
+            </p>
+            <div style={{ width: "100%", marginTop: 22, textAlign: "left" }}>
+              <YourAgent compact />
+            </div>
+            <div className="suggest">
+              {examples.map((e) => (
+                <button
+                  key={e.ask}
+                  onClick={() => {
+                    setAsk(e.ask);
+                    boxRef.current?.focus();
+                  }}
+                >
+                  {e.title}
+                  <span>{e.note}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          runs.map((run, i) => (
+            <Exchange key={i} run={run} onRated={(ratings) => setRuns((rs) => rs.map((r, j) => (j === i ? { ...r, ratings } : r)))} />
+          ))
+        )}
+        <div ref={endRef} />
+      </div>
 
-      <div className="card stack">
+      <div className="composer">
         <textarea
+          ref={boxRef}
+          rows={1}
           value={ask}
-          placeholder={owner.me?.agent?.grantId ? "e.g. Swap 0.05 USDC to SUI, or: is wallet 0x… safe?" : "e.g. Is wallet 0x… safe to trade with?"}
-          onChange={(e) => setAsk(e.target.value)}
+          placeholder={mine ? "Message your agent… e.g. swap 0.05 USDC to SUI" : "Message the demo agent… e.g. is wallet 0x… safe?"}
+          onChange={(e) => {
+            setAsk(e.target.value);
+            e.target.style.height = "auto";
+            e.target.style.height = `${e.target.scrollHeight}px`;
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
@@ -94,35 +140,44 @@ export default function AgentPage() {
             }
           }}
         />
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <div className="row">
-            <span className="small muted" title="ON: it uses what it learned to skip sources that weren't worth it. OFF: it pays for everything it planned, so you can compare.">Memory ⓘ</span>
-            <div className="toggle">
-              <button className={useMemory ? "on" : ""} onClick={() => setUseMemory(true)}>
-                ON
-              </button>
-              <button className={!useMemory ? "on" : ""} onClick={() => setUseMemory(false)}>
-                OFF
-              </button>
-            </div>
-          </div>
-          <button className="primary" disabled={busy || !ask.trim()} onClick={() => submit(ask)}>
-            {busy ? "Working…" : "Run task"}
+        <div className="bar">
+          <span className="small faint">{busy ? "Working on it…" : "Enter to send · Shift+Enter for a new line"}</span>
+          <button className="primary send" aria-label="Send" disabled={busy || !ask.trim()} onClick={() => submit(ask)}>
+            ↑
           </button>
         </div>
-        {runs.length === 0 && (
-          <div className="stack small">
-            <span className="muted">Try one:</span>
-            {(owner.me?.agent?.grantId ? [...EXAMPLES, ...OWNER_EXAMPLES] : EXAMPLES).map((e) => (
-              <button key={e.ask} style={{ textAlign: "left" }} onClick={() => setAsk(e.ask)}>
-                <span className="pill" style={{ marginRight: 8 }}>{e.tag}</span>
-                {e.ask}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+      <div className="hint">Real USDC on Sui mainnet. The agent can only spend inside its mandate.</div>
     </div>
+  );
+}
+
+/** One line at the top: whose mandate, what it holds, how much is left this week. Links to Settings. */
+function MandateChip({ refreshKey, mine }: { refreshKey: number; mine: boolean }) {
+  const [g, setG] = useState<any>(null);
+  useEffect(() => {
+    fetch("/api/grant").then((r) => r.json()).then((j) => !j.error && setG(j)).catch(() => {});
+  }, [refreshKey]);
+  return (
+    <Link href="/mandate" className="status-chip" title="Open settings">
+      <span className={`dot ${g && g.status !== "active" ? "off" : ""}`} />
+      <span>{mine ? "Your agent" : "Demo agent"}</span>
+      {g ? (
+        <>
+          <span>·</span>
+          <span>
+            <b>{usdc(g.held ?? 0)}</b> held
+          </span>
+          <span>·</span>
+          <span>
+            <b>{usdc(Math.max(0, g.weeklyBudget - g.spentThisWeek))}</b> left this week
+          </span>
+        </>
+      ) : (
+        <span>· reading Sui…</span>
+      )}
+      <span>⚙</span>
+    </Link>
   );
 }
 
@@ -135,52 +190,96 @@ function Elapsed() {
   return <>{s}s</>;
 }
 
-function RunView({ run, onRated }: { run: Run; onRated: (r: Record<string, any>) => void }) {
+/** A user message and the agent's reply: the answer first, what it did folded underneath. */
+function Exchange({ run, onRated }: { run: Run; onRated: (r: Record<string, any>) => void }) {
   const r = run.receipt;
   const free = r && !r.totalSpent && r.outputs?.["tatum-free"];
+  const working = !r && !run.error;
+  const lines = run.steps.filter((s) => s.step !== "done");
   return (
-    <div className="card stack">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <strong>{run.ask}</strong>
-        <span className={`pill ${run.useMemory ? "" : "warn"}`}>memory {run.useMemory ? "on" : "off"}</span>
-      </div>
-      <ul className="steps">
-        {run.steps.map((s, i) => (
-          <StepLine key={i} s={s} />
-        ))}
-        {!r && !run.error && (
-          <li className="muted">
-            <span className="icon">⏳</span>working… <Elapsed /> <span className="small">(paid tasks settle on Sui and usually take 10–20 s)</span>
-          </li>
-        )}
-      </ul>
-      {run.error && <div className="pill bad">{run.error}</div>}
-      {r && (
-        <>
-          <div className="card" style={{ background: "var(--bg)" }}>
-            <div style={{ whiteSpace: "pre-wrap" }}>{r.answer}</div>
-            <div className="small muted" style={{ marginTop: 8 }}>
-              {free
-                ? "Answered from Tatum's free security check, so nothing was bought"
-                : !r.totalSpent
-                  ? "Nothing was bought for this answer"
-                  : r.answerModel
-                    ? `Written by ${r.answerModel} using only the sources paid for above`
-                    : "Summary of the sources paid for above"}
+    <>
+      <div className="msg-me">{run.ask}</div>
+      <div className="msg-ai">
+        <span className="avatar">
+          <span className="logo" />
+        </span>
+        <div className="ai-body">
+          {working && (
+            <div className="live">
+              <span className="spinner" />
+              <span>
+                {lines.length ? <StepText s={lines[lines.length - 1]} /> : "Thinking…"} · <Elapsed />
+              </span>
             </div>
-          </div>
-          <div className="row small">
-            <span className="pill ok">spent {usdc(r.totalSpent ?? 0)}</span>
-            {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
-            {r.denied.length > 0 && <span className="pill bad">denied {r.denied.length}</span>}
-            {r.memoriesUsed.length > 0 && <span className="pill">recalled {r.memoriesUsed.length} {r.memoriesUsed.length === 1 ? "memory" : "memories"}</span>}
-            <Link href={`/receipts/${r.taskId}`}>Full receipt →</Link>
-          </div>
-          {r.payments.length > 0 && <Rate taskId={r.taskId} payments={r.payments} rated={run.ratings} onRated={onRated} />}
-        </>
-      )}
-    </div>
+          )}
+          {run.error && <div className="pill bad">{run.error}</div>}
+          {r && (
+            <>
+              <div className="answer">{r.answer}</div>
+              <div className="row small meta">
+                <span className={`pill ${r.totalSpent ? "" : "ok"}`}>{r.totalSpent ? `spent ${usdc(r.totalSpent)}` : "spent nothing"}</span>
+                {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
+                {r.denied.length > 0 && <span className="pill bad">refused {r.denied.length}</span>}
+                {r.memoriesUsed.length > 0 && <span className="pill">used {r.memoriesUsed.length} {r.memoriesUsed.length === 1 ? "memory" : "memories"}</span>}
+                {!run.useMemory && <span className="pill warn">memory off</span>}
+                <Link href={`/receipts/${r.taskId}`} className="small">
+                  Receipt ↗
+                </Link>
+              </div>
+              <div className="small faint" style={{ marginTop: 6 }}>
+                {free
+                  ? "Answered from Tatum's free security check, so nothing was bought."
+                  : !r.totalSpent
+                    ? "Nothing was bought for this answer."
+                    : r.answerModel
+                      ? `Written by ${r.answerModel} using only the sources paid for.`
+                      : "Summary of the sources paid for."}
+              </div>
+            </>
+          )}
+          {lines.length > 0 && (
+            <details className="trace" open={working}>
+              <summary>What I did · {lines.length} steps</summary>
+              <ul className="steps">
+                {lines.map((s, i) => (
+                  <StepLine key={i} s={s} />
+                ))}
+              </ul>
+            </details>
+          )}
+          {r && r.payments.length > 0 && r.payments.some((p: any) => !["transfer", "swap"].includes(p.service)) && (
+            <Rate taskId={r.taskId} payments={r.payments.filter((p: any) => !["transfer", "swap"].includes(p.service))} rated={run.ratings} onRated={onRated} />
+          )}
+        </div>
+      </div>
+    </>
   );
+}
+
+/** The latest step as a short live status. */
+function StepText({ s }: { s: Step }) {
+  const svc = s.service ? serviceName(s.service) : "";
+  const t: Record<string, string> = {
+    classified: "Understanding the request",
+    "free-read": "Running a free check first",
+    preferences: "Reading your preferences",
+    planned: "Planning what to buy",
+    buying: `Buying ${svc}`,
+    quote: `Got a price from ${svc}`,
+    "grant-ok": "Mandate allows it",
+    paid: "Paid, confirming on Sui",
+    verified: "Payment verified",
+    swap: "Preparing the swap",
+    "swap-quote": "Found the best price",
+    swapped: "Swapped, verifying",
+    transfer: "Preparing the transfer",
+    sent: "Sent, verifying",
+    answering: "Writing the answer",
+    archived: "Saving the report",
+    skipped: `Skipped ${svc}`,
+    denied: "Mandate refused a payment",
+  };
+  return <>{t[s.step] ?? "Working"}</>;
 }
 
 function StepLine({ s }: { s: Step }) {
@@ -193,7 +292,7 @@ function StepLine({ s }: { s: Step }) {
   );
   switch (s.step) {
     case "classified":
-      return line("🔎", <>Task: {({ "wallet-risk": "wallet risk check", "token-holders": "token holder check", transfer: "transfer", unknown: "not recognised" } as any)[s.type] ?? s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
+      return line("🔎", <>Task: {({ "wallet-risk": "wallet risk check", "token-holders": "token holder check", transfer: "transfer", swap: "swap", unknown: "not recognised" } as any)[s.type] ?? s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
     case "free-read":
       return line("🆓", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
     case "transfer":
@@ -261,8 +360,8 @@ function Rate({ taskId, payments, rated, onRated }: { taskId: string; payments: 
     );
   }
   return (
-    <div className="stack small" style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
-      <span className="muted">Was each paid source worth it? The agent will remember.</span>
+    <div className="stack small card" style={{ marginTop: 12, padding: 14 }}>
+      <span className="muted">Was each paid source worth it? Your agent will remember next time.</span>
       {payments.map((p) => (
         <div key={p.service} className="row">
           <span style={{ minWidth: 160 }}>{serviceName(p.service)}</span>
