@@ -75,6 +75,20 @@ export async function setSetting(key, value) {
     on conflict (key) do update set value = excluded.value, updated_at = now()`;
 }
 
+/**
+ * Take one use of a daily allowance, atomically. Returns true if this caller got one, false if
+ * today's `limit` is already used. Counts live in settings, keyed by UTC day.
+ */
+export async function claimDaily(name, limit) {
+  if (limit <= 0) return false;
+  const key = `daily:${name}:${new Date().toISOString().slice(0, 10)}`;
+  const [row] = await sql()`insert into settings (key, value) values (${key}, '1')
+    on conflict (key) do update set value = (settings.value::int + 1)::text, updated_at = now()
+    where settings.value::int < ${limit}
+    returning value`;
+  return Boolean(row);
+}
+
 // --- Per-user agent wallets. Keys are encrypted at rest with AGENT_KEY_SECRET (32 bytes, hex). ---
 
 function secretKey() {
