@@ -26,7 +26,9 @@ export function YourAgent({ compact = false, onMandatePage = false }: { compact?
       <div className="card demo-note">
         <div>
           <strong>You&apos;re trying the demo agent.</strong>{" "}
-          <span className="muted">Ask it anything below; it spends from our demo budget. Want one that works for you?</span>
+          <span className="muted">
+            {onMandatePage ? "This page shows the demo agent's rules." : "Ask it anything below; it spends from our demo budget."} Want one that works for you?
+          </span>
         </div>
         <button className="primary" onClick={() => setOpen(true)}>
           Set up my own agent
