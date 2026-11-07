@@ -23,8 +23,12 @@ async function submit({ bytes, signature, action }: any, owner: string | null) {
       const grantId = Object.entries(t.objectTypes ?? {}).find(([, ty]) => String(ty).endsWith("::grant::Grant"))?.[0];
       if (!grantId) throw new Error("no Grant created in this transaction");
       // A signed-in user's new grant becomes theirs; the demo owner adopts it for the demo agent.
-      if (owner && (await a.getUserAgent(owner))) await a.setUserGrant(owner, grantId);
-      else await a.adoptGrant(grantId);
+      const me = owner ? await a.getUserAgent(owner) : null;
+      if (owner && me) {
+        await a.setUserGrant(owner, grantId);
+        // First mandate of a new agent: pay the welcome credit into it (skipped quietly if none left).
+        if (!me.credited) out.credit = await a.grantWelcomeCredit(owner, grantId);
+      } else await a.adoptGrant(grantId);
       out.grantId = grantId;
     }
     return Response.json(out);

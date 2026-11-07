@@ -35,7 +35,8 @@ export default function MandatePage() {
       const signature = await owner.signTransaction(built.bytes);
       const sent = await fetch("/api/owner/submit", { method: "POST", body: JSON.stringify({ bytes: built.bytes, signature, action: body.action }) }).then((r) => r.json());
       if (sent.error) throw new Error(sent.error);
-      setResult({ ok: true, text: ({ create: "Rules signed. Your agent now follows them.", cap: "Change approved on Sui.", heartbeat: "Checked in. The auto-freeze timer restarted.", revoke: "Mandate stopped for good.", withdraw: "Your USDC is on its way to your wallet." } as Record<string, string>)[String(body.action)] ?? "Confirmed on Sui", digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
+      const credit = sent.credit?.amount ? ` 🎁 We added a ${usdc(sent.credit.amount)} welcome credit to your mandate.` : sent.credit?.skipped ? ` (No welcome credit: ${sent.credit.skipped}.)` : "";
+      setResult({ ok: true, text: ({ create: "Rules signed. Your agent now follows them.", cap: "Change approved on Sui.", heartbeat: "Checked in. The auto-freeze timer restarted.", revoke: "Mandate stopped for good.", withdraw: "Your USDC is on its way to your wallet." } as Record<string, string>)[String(body.action)] + (body.action === "create" ? credit : "") || "Confirmed on Sui", digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
       setRefresh((n) => n + 1);
       await owner.refreshMe();
     } catch (e) {
@@ -46,6 +47,7 @@ export default function MandatePage() {
   }
 
   const agentAddress = owner.me?.agent?.address;
+  const hasOwn = Boolean(owner.me?.agent?.grantId);
 
   return (
     <div className="settings">
@@ -60,16 +62,15 @@ export default function MandatePage() {
       <div>
         <h1>Settings</h1>
         <p className="muted" style={{ marginTop: 0 }}>
-          {isOwner
-            ? "Your agent's money and rules. Every change here is signed by you and enforced by the contract on Sui."
-            : "These are the demo agent's settings, shown read-only. Set up your own agent to control your own money and rules."}
+          Your agent&apos;s money and rules. Every change here is signed by you and enforced by the contract on Sui.
         </p>
         <YourAgent onMandatePage />
-        {account && data && !isOwner && !owner.me?.agent && (
-          <div className="card small" style={{ marginTop: 12 }}>
-            <span className="pill warn">Signed in as {short(account.address)}. Create your own agent above to get your own settings.</span>
-          </div>
+        {needsMandate && (
+          <Section id="rules" title="Rules">
+            <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+          </Section>
         )}
+        {hasOwn && (<>
         {result && (
           <div className="card small" style={{ marginTop: 12 }}>
             <span className={`pill ${result.ok ? "ok" : "bad"}`}>{result.ok ? "Done" : "Failed"}</span> {result.text}
@@ -87,7 +88,7 @@ export default function MandatePage() {
         )}
 
         <Section id="money" title="Money">
-          <GrantBar refreshKey={refresh} label={owner.me?.agent?.grantId ? "Your mandate" : "Demo agent's mandate"} />
+          <GrantBar refreshKey={refresh} label="Your mandate" />
           {isOwner && (
             <div className="card stack" style={{ marginTop: 12 }}>
               <div>
@@ -119,11 +120,7 @@ export default function MandatePage() {
         </Section>
 
         <Section id="rules" title="Rules">
-          {isOwner || needsMandate ? (
-            <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
-          ) : (
-            <div className="card small muted">The weekly allowance and maximum per payment are shown on the card above. Only the owner can change them.</div>
-          )}
+          <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
         </Section>
 
         <Section id="safety" title="Pause & stop">
@@ -228,6 +225,7 @@ export default function MandatePage() {
             )}
           </div>
         </Section>
+        </>)}
       </div>
     </div>
   );

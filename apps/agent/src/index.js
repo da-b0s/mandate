@@ -9,3 +9,4 @@ export { asUser, createUserAgent, getUserAgent, setUserGrant, userMemoryPrefix }
 export { withAgent } from "./context.js";
 export { MIN_INTERVAL_MS } from "./transfer.js";
 export { fundsFor, sweepWallet } from "./custody.js";
+export { CREDIT_AMOUNT, creditsLeft, grantWelcomeCredit } from "./credit.js";

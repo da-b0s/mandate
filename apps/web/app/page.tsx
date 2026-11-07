@@ -14,13 +14,15 @@ async function stats() {
     const payments = receipts.reduce((n: number, r: any) => n + (r.payments?.length ?? 0), 0);
     const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
     return {
+      creditsLeft: await a.creditsLeft().catch(() => null),
+      credit: a.CREDIT_AMOUNT,
       payments,
       tasks: receipts.length,
       wasteCut: off && on ? pct(on.totals.wasted, off.totals.wasted) : 86,
       costCut: off && on ? pct(on.totals.costPerUsefulAnswer, off.totals.costPerUsefulAnswer) : 43,
     };
   } catch {
-    return { payments: null, tasks: null, wasteCut: 86, costCut: 43 };
+    return { creditsLeft: null, credit: 0, payments: null, tasks: null, wasteCut: 86, costCut: 43 };
   }
 }
 
@@ -36,7 +38,7 @@ const RIGHT = [
 const STEPS = [
   { icon: "👤", title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent." },
   { icon: "📏", title: "Set its rules", body: "A weekly allowance and a maximum per payment. Sign once." },
-  { icon: "💵", title: "Add some USDC", body: "A few dollars is plenty. Take it back any time." },
+  { icon: "💵", title: "Add some USDC", body: "The first users get a welcome credit. Otherwise a few dollars is plenty, and you can take it back any time." },
   { icon: "💬", title: "Chat with it", body: "Ask in plain words. It does the job and shows the receipt." },
 ];
 
@@ -55,6 +57,7 @@ const FAQ = [
   ["What if something goes wrong?", "Press Stop for good and the agent can never spend again. Then press Withdraw and everything left goes back to your wallet. Both work at any time."],
   ["Where do the coins from a swap go?", "Straight to your own wallet, never to the agent. The swap still counts against your weekly allowance."],
   ["How does it learn?", "After a task, you can rate each paid source as useful or not. Those ratings are stored in Walrus Memory, and next time the agent skips sources that keep disappointing. In our 50-task test this cut wasted spend by 86%."],
+  ["Is it free to try?", "The first users get a small USDC welcome credit paid into their mandate, enough for several checks, a transfer and a swap. After that you add your own USDC, and you can withdraw whatever is left at any time."],
   ["Is this real money?", "Yes. Everything runs on Sui mainnet with real USDC, and every payment links to a public receipt you can check yourself."],
 ];
 
@@ -74,12 +77,17 @@ export default async function Home() {
         </p>
         <div className="row cta">
           <Link href="/agent" className="btn primary big">
-            Try the demo
+            Get your agent
           </Link>
-          <Link href="/agent?setup=1" className="btn big">
-            Get your own agent ↗
+          <Link href="/explorer" className="btn big">
+            Explore real payments ↗
           </Link>
         </div>
+        {s.creditsLeft ? (
+          <p className="small muted" style={{ marginTop: 14 }}>
+            🎁 The first users get a {(s.credit / 1e6).toFixed(2)} USDC welcome credit to try it. {s.creditsLeft} left.
+          </p>
+        ) : null}
         <div className="statstrip">
           <div>
             <b>−{s.wasteCut}%</b>
@@ -132,7 +140,7 @@ export default async function Home() {
           ))}
         </div>
         <div className="row cta">
-          <Link href="/agent?setup=1" className="btn primary">
+          <Link href="/agent" className="btn primary">
             Start now
           </Link>
         </div>
@@ -196,14 +204,14 @@ export default async function Home() {
       </section>
 
       <section className="glass final">
-        <h2 className="center-h">Try it in your browser. No sign-in.</h2>
-        <p className="center-p">Watch the demo agent buy information within its limits, or check every payment yourself.</p>
+        <h2 className="center-h">Your agent is two minutes away.</h2>
+        <p className="center-p">Sign in with Google, set its rules, and start chatting. Or browse every real payment first.</p>
         <div className="row cta">
           <Link href="/agent" className="btn primary big">
-            Open the demo
+            Get your agent
           </Link>
-          <Link href="/proof" className="btn big">
-            See the proof
+          <Link href="/explorer" className="btn big">
+            Open the explorer
           </Link>
         </div>
       </section>
@@ -213,7 +221,7 @@ export default async function Home() {
         <span className="row" style={{ gap: 18 }}>
           <Link href="/agent">Chat</Link>
           <Link href="/mandate">Settings</Link>
-          <Link href="/proof">Proof</Link>
+          <Link href="/explorer">Explorer</Link>
           <Link href="/privacy">Privacy</Link>
         </span>
       </footer>

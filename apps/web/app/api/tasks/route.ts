@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   const a = await agent();
   const { runTask } = a;
   // Signed in but not set up yet: say so, rather than quietly running the demo agent for them.
-  if (owner) {
+  if (!owner) return Response.json({ error: "Sign in to chat with your own agent. It takes about two minutes." }, { status: 401 });
+  {
     const me = await a.getUserAgent(owner);
     if (!me) return Response.json({ error: "You're signed in. Create your agent first (step 1 on this page)." }, { status: 409 });
     if (!me.grantId) return Response.json({ error: "Your agent needs a mandate first: sign one on the Mandate page (step 2)." }, { status: 409 });

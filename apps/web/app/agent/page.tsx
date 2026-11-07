@@ -73,12 +73,13 @@ export default function AgentPage() {
     }
   }
 
-  const examples = mine ? [...OWNER_EXAMPLES, ...EXAMPLES.slice(0, 2)] : EXAMPLES;
+  const examples = [...OWNER_EXAMPLES, ...EXAMPLES.slice(0, 2)];
+  const ready = mine;
 
   return (
     <div className="chat-page">
       <div className="chat-top">
-        <MandateChip refreshKey={grantKey} mine={mine} />
+        {ready ? <MandateChip refreshKey={grantKey} mine={mine} /> : <span className="small muted">Set up your agent to start chatting</span>}
         <div className="row small">
           <span className="muted" title="ON: it uses what it learned to skip sources that weren't worth it. OFF: it pays for everything it planned, so you can compare.">
             Memory
@@ -94,14 +95,14 @@ export default function AgentPage() {
         {runs.length === 0 ? (
           <div className="empty">
             <span className="logo" />
-            <h1>{mine ? "What should your agent do?" : "Ask the agent anything"}</h1>
+            <h1>{ready ? "What should your agent do?" : "Meet your agent"}</h1>
             <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
               It checks wallets and tokens, sends money and swaps coins, always inside the rules of its mandate. Every payment gets a receipt.
             </p>
             <div style={{ width: "100%", marginTop: 22, textAlign: "left" }}>
               <YourAgent compact />
             </div>
-            <div className="suggest">
+            {ready && <div className="suggest">
               {examples.map((e) => (
                 <button
                   key={e.ask}
@@ -114,7 +115,7 @@ export default function AgentPage() {
                   <span>{e.note}</span>
                 </button>
               ))}
-            </div>
+            </div>}
           </div>
         ) : (
           runs.map((run, i) => (
@@ -129,7 +130,8 @@ export default function AgentPage() {
           ref={boxRef}
           rows={1}
           value={ask}
-          placeholder={mine ? "Message your agent… e.g. swap 0.05 USDC to SUI" : "Message the demo agent… e.g. is wallet 0x… safe?"}
+          disabled={!ready}
+          placeholder={ready ? "Message your agent… e.g. swap 0.05 USDC to SUI" : "Finish the setup above to start chatting"}
           onChange={(e) => {
             setAsk(e.target.value);
             e.target.style.height = "auto";
@@ -144,7 +146,7 @@ export default function AgentPage() {
         />
         <div className="bar">
           <span className="small faint">{busy ? "Working on it…" : "Enter to send · Shift+Enter for a new line"}</span>
-          <button className="primary send" aria-label="Send" disabled={busy || !ask.trim()} onClick={() => submit(ask)}>
+          <button className="primary send" aria-label="Send" disabled={!ready || busy || !ask.trim()} onClick={() => submit(ask)}>
             ↑
           </button>
         </div>

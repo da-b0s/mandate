@@ -130,6 +130,19 @@ export async function setAgentCredit(owner, digest) {
   await sql()`update agents set credit_digest = ${digest} where owner = ${owner}`;
 }
 
+/** Reserve a welcome credit for this owner if one is left. A reserved row reads 'pending' until paid. */
+export async function claimCredit(owner, limit) {
+  const rows = await sql()`update agents set credit_digest = 'pending'
+    where owner = ${owner} and credit_digest is null
+      and (select count(*) from agents where credit_digest is not null) < ${limit}
+    returning owner`;
+  return rows.length > 0;
+}
+
+export async function releaseCredit(owner) {
+  await sql()`update agents set credit_digest = null where owner = ${owner} and credit_digest = 'pending'`;
+}
+
 export async function countCredited() {
   const rows = await sql()`select count(*)::int as n from agents where credit_digest is not null`;
   return rows[0].n;

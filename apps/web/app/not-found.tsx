@@ -8,7 +8,7 @@ export default function NotFound() {
       <h1>Nothing here</h1>
       <p className="muted" style={{ margin: 0 }}>That page does not exist. Receipts and links on this site point to real pages; this one may be mistyped.</p>
       <div className="row" style={{ justifyContent: "center" }}>
-        <Link href="/agent">Give the agent a task</Link>·<Link href="/proof">See the proof</Link>
+        <Link href="/agent">Give the agent a task</Link>·<Link href="/explorer">Open the explorer</Link>
       </div>
     </div>
   );

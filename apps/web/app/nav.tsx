@@ -6,7 +6,7 @@ const LINKS = [
   ["/agent", "Chat"],
   ["/mandate", "Settings"],
   ["/dashboard", "Value"],
-  ["/proof", "Proof"],
+  ["/explorer", "Explorer"],
 ];
 
 export function Nav() {

@@ -19,6 +19,9 @@ declare module "@mandate/agent" {
   export function createUserAgent(owner: string): Promise<any>;
   export function setUserGrant(owner: string, grantId: string): Promise<any>;
   export function sweepWallet(grantId: string): Promise<string | null>;
+  export const CREDIT_AMOUNT: number;
+  export function creditsLeft(): Promise<number>;
+  export function grantWelcomeCredit(owner: string, grantId: string): Promise<{ digest?: string; amount?: number; skipped?: string }>;
   export function asUser<T>(owner: string, fn: () => Promise<T>, o?: { setup?: boolean }): Promise<T>;
   export function recallPreferences(): Promise<any[]>;
 }

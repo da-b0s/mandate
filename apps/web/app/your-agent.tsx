@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { SignIn, useOwner } from "@/lib/owner";
 import { short, suiscanObj, usdc } from "@/lib/format";
 
@@ -13,29 +13,8 @@ export function YourAgent({ compact = false, onMandatePage = false }: { compact?
   const me = o.me;
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [open, setOpen] = useState(false);
-  // "Get your own agent" on the homepage links here with ?setup=1.
-  useEffect(() => {
-    if (new URLSearchParams(location.search).has("setup")) setOpen(true);
-  }, []);
 
   if (!me) return <div className="card small muted" style={{ minHeight: 76 }}>Checking who you are…</div>;
-
-  if (!me.owner && !open) {
-    return (
-      <div className="card demo-note">
-        <div>
-          <strong>You&apos;re trying the demo agent.</strong>{" "}
-          <span className="muted">
-            {onMandatePage ? "This page shows the demo agent's rules." : "Ask it anything below; it spends from our demo budget."} Want one that works for you?
-          </span>
-        </div>
-        <button className="primary" onClick={() => setOpen(true)}>
-          Set up my own agent
-        </button>
-      </div>
-    );
-  }
 
   const a = me.agent;
   const steps = [
