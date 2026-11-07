@@ -33,7 +33,9 @@ export default function AgentPage() {
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const mine = Boolean(owner.me?.agent?.grantId);
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [runs]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [runs]);
 
   async function submit(text: string) {
     if (!text.trim() || busy) return;
