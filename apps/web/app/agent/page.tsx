@@ -76,7 +76,7 @@ export default function AgentPage() {
         </p>
       </div>
       <YourAgent compact />
-      <GrantBar refreshKey={grantKey} />
+      <GrantBar refreshKey={grantKey} label={owner.me?.agent?.grantId ? "Your mandate" : "Demo agent's mandate"} />
 
       {runs.map((run, i) => (
         <RunView key={i} run={run} onRated={(ratings) => setRuns((rs) => rs.map((r, j) => (j === i ? { ...r, ratings } : r)))} />

@@ -125,3 +125,5 @@ h2.section { font-size: 24px; letter-spacing: -0.01em; margin-bottom: 16px; }
 .tick { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
 .checklist li.now .tick { background: var(--accent); border-color: var(--accent); color: white; }
 .checklist li.done .tick { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.checklist .stack > * { display: block; }
+.checklist .stack > .row { display: flex; }

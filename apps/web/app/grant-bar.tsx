@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { suiscanObj, usdc } from "@/lib/format";
 
 // Same layout while loading and loaded, so the page does not jump when the read finishes.
-export function GrantBar({ refreshKey = 0 }: { refreshKey?: number }) {
+export function GrantBar({ refreshKey = 0, label = "Mandate" }: { refreshKey?: number; label?: string }) {
   const [g, setG] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
@@ -20,7 +20,7 @@ export function GrantBar({ refreshKey = 0 }: { refreshKey?: number }) {
     <div className="card stack small" aria-busy={!g}>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div className="row">
-          <strong>Mandate</strong>
+          <strong>{label}</strong>
           {g ? <span className={`pill ${tone}`}>{g.status}</span> : <span className="pill">reading Sui…</span>}
           {g && (
             <a href={suiscanObj(g.id)} target="_blank" className="mono">

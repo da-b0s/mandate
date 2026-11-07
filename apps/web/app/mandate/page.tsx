@@ -54,7 +54,7 @@ export default function MandatePage() {
           or take your money back.
         </p>
       </div>
-      <GrantBar refreshKey={refresh} />
+      <GrantBar refreshKey={refresh} label={owner.me?.agent?.grantId ? "Your mandate" : "Demo agent's mandate"} />
 
       <YourAgent onMandatePage />
       {account && data && !isOwner && !owner.me?.agent && (
