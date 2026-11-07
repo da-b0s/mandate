@@ -26,7 +26,11 @@ export async function holderPrecheck(token, chain = "ethereum-mainnet") {
   if (!CHAINS.has(chain)) return `chain must be one of ${[...CHAINS].join(", ")}`;
   return tokenProfile(token, chain).then(
     () => null,
-    () => "no token data available for this address, so nothing was charged",
+    // Tatum answers 400/404 for addresses it has no token data for; anything else is an outage.
+    (e) =>
+      / (400|404)$/.test(String(e?.message))
+        ? "no token data available for this address, so nothing was charged"
+        : "token data is temporarily unavailable, so nothing was charged; try again shortly",
   );
 }
 
