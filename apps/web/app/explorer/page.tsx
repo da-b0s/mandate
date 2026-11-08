@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { agent } from "@/lib/agent";
-import { asSessionAgent } from "@/lib/session";
 import { serviceName, short, suiscanObj, suiscanTx, usdc, walruscan } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +11,8 @@ const LATEST = 10;
 // The headline evidence up top; the full record (every payment, memory and test run) folded below.
 export default async function ExplorerPage() {
   const a = await agent();
-  const p = await asSessionAgent(() => a.proofData());
+  // Not run as the signed-in user: the Explorer is the platform's public record.
+  const p = await a.proofData();
   const off = p.replay.filter((r: any) => r.mode === "off").at(-1);
   const on = p.replay.filter((r: any) => r.mode === "on").at(-1);
   const memories = Array.isArray(p.memories) ? p.memories : [];
@@ -181,7 +181,7 @@ function PaymentTable({ rows }: { rows: any[] }) {
               <td>{serviceName(x.service)}</td>
               <td>{usdc(x.amount)}</td>
               <td><a href={suiscanTx(x.digest)} target="_blank" className="mono">{short(x.digest, 8)}</a></td>
-              <td><Link href={`/receipts/${x.taskId}`} className="small">open</Link></td>
+              <td>{x.private ? <span className="small faint">private</span> : <Link href={`/receipts/${x.taskId}`} className="small">open</Link>}</td>
             </tr>
           ))}
         </tbody>

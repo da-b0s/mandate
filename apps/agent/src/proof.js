@@ -46,10 +46,11 @@ export async function proofData() {
       ),
     ),
     memoryCounts().catch((e) => ({ error: String(e.message) })),
-    listReceipts({ light: true }),
+    // The public record: everyone's payments, whoever is looking.
+    listReceipts({ light: true, all: true }),
   ]);
   const payments = receipts.flatMap((r) =>
-    r.payments.map((p) => ({ taskId: r.taskId, at: r.startedAt, service: p.service, amount: p.amount, digest: p.digest, recordDigest: p.recordDigest, verifiedVia: p.verifiedVia })),
+    r.payments.map((p) => ({ taskId: r.taskId, private: Boolean(r.owner), at: r.startedAt, service: p.service, amount: p.amount, digest: p.digest, recordDigest: p.recordDigest, verifiedVia: p.verifiedVia })),
   );
   const valueBlobs = receipts.flatMap((r) => Object.entries(r.ratings ?? {}).map(([service, v]) => ({ taskId: r.taskId, service, ...v })).filter((v) => v.valueBlob));
   return {

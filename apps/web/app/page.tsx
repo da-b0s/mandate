@@ -11,7 +11,7 @@ async function stats() {
     const runs = a.replayRuns();
     const off = runs.filter((r: any) => r.mode === "off").at(-1);
     const on = runs.filter((r: any) => r.mode === "on").at(-1);
-    const receipts = await a.listReceipts({ light: true });
+    const receipts = await a.listReceipts({ light: true, all: true });
     const payments = receipts.reduce((n: number, r: any) => n + (r.payments?.length ?? 0), 0);
     const pct = (a: number, b: number) => Math.round((1 - a / b) * 100);
     return {
