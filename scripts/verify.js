@@ -25,8 +25,14 @@ for (const [label, id] of [["demo grant", process.env.GRANT_ID], ["replay grant"
 const receipts = (await listReceipts()).filter((r) => r.payments?.length).slice(-5);
 for (const r of receipts) {
   for (const p of r.payments) {
-    const t = await tatum.getTransaction({ digest: p.digest, include: { balanceChanges: true, effects: true } });
+    const t = await tatum.getTransaction({ digest: p.digest, include: { balanceChanges: true, effects: true, events: true } });
     const tx = t.Transaction ?? t.FailedTransaction;
+    if (p.service === "swap") {
+      // A swap pays the owner in another coin; the contract's Swapped event records what went in.
+      const ev = tx.events?.find((e) => e.eventType.endsWith("::grant::Swapped"));
+      check(`receipt ${r.taskId} swap`, tx.effects.status.success && Number(ev?.json?.amount_in) === p.amount, `${p.amount / 1e6} USDC in, ${p.received ?? ""}, ${p.digest}`);
+      continue;
+    }
     const got = tx.balanceChanges.find((b) => b.address === p.payee && b.coinType.endsWith("::usdc::USDC"));
     check(`receipt ${r.taskId} ${p.service} payment`, tx.effects.status.success && Number(got?.amount) === p.amount, `${p.amount / 1e6} USDC, ${p.digest}`);
     if (p.recordDigest) {
