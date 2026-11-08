@@ -13,6 +13,7 @@ const DONE: Record<string, string> = {
   heartbeat: "Checked in. The auto-freeze timer restarted.",
   revoke: "Mandate stopped for good.",
   withdraw: "Your USDC is on its way to your wallet.",
+  send: "Sent from your wallet.",
 };
 
 export function useOwnerAction(onDone?: () => void) {

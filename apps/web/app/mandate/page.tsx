@@ -7,6 +7,7 @@ import { short, suiscanTx, TASK_TYPES, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
 import { Schedules } from "./schedules";
+import { YourWallet } from "./your-wallet";
 
 // The owner's console: the agent proposes, the owner decides, the chain enforces.
 export default function MandatePage() {
@@ -31,6 +32,7 @@ export default function MandatePage() {
     <div className="settings">
       <nav className="snav">
         <a href="#money">Money</a>
+        <a href="#wallet">Your wallet</a>
         <a href="#rules">Rules</a>
         <a href="#safety">Pause &amp; stop</a>
         <a href="#recurring">Recurring</a>
@@ -90,6 +92,10 @@ export default function MandatePage() {
               </div>
             </div>
           )}
+        </Section>
+
+        <Section id="wallet" title="Your wallet">
+          <YourWallet act={act} busy={busy} refresh={refresh} />
         </Section>
 
         <Section id="rules" title="Rules">

@@ -19,7 +19,20 @@ async function build(body: any) {
   const [a, c] = await Promise.all([agent(), chain()]);
   if (sender !== (await a.appOwner())) return Response.json({ error: "Connect the wallet that owns this mandate." }, { status: 403 });
   let tx;
-  if (action === "create") {
+  if (action === "send") {
+    // From the owner's own wallet (swap output, withdrawals), not the mandate. The owner signs it.
+    const { symbol, amount, to } = body;
+    const coin = c.OWNER_COINS[symbol];
+    if (!coin) return Response.json({ error: "Pick USDC, SUI, WAL or DEEP." }, { status: 400 });
+    if (!/^0x[0-9a-fA-F]{64}$/.test(String(to ?? ""))) return Response.json({ error: "That isn't a Sui address (0x followed by 64 characters)." }, { status: 400 });
+    if (String(to).toLowerCase() === sender) return Response.json({ error: "That's your own address." }, { status: 400 });
+    const [whole, frac = ""] = String(amount ?? "").trim().split(".");
+    if (!/^\d+$/.test(whole || "0") || !/^\d*$/.test(frac) || frac.length > coin.decimals) return Response.json({ error: "Enter an amount like 0.5." }, { status: 400 });
+    const base = BigInt((whole || "0") + frac.padEnd(coin.decimals, "0"));
+    const held = BigInt((await c.ownerBalances(sender)).find((b) => b.symbol === symbol)?.balance ?? "0");
+    if (base <= 0n || base > held) return Response.json({ error: `You hold less than that. Your ${symbol} balance is ${Number(held) / 10 ** coin.decimals}.` }, { status: 400 });
+    tx = c.ownerSendTx({ symbol, amount: base, to: String(to).toLowerCase() });
+  } else if (action === "create") {
     const weeklyBudget = usdc(body.weeklyUsdc);
     const perCallCap = usdc(body.perCallUsdc);
     const days = Number(body.days);

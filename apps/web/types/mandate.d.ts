@@ -31,6 +31,9 @@ declare module "@mandate/chain" {
   export function heartbeatTx(o: { grantId: string }): any;
   export function withdrawTx(o: { grantId: string; amount: number }): any;
   export function readVault(grantId: string): Promise<number>;
+  export const OWNER_COINS: Record<string, { type: string; decimals: number }>;
+  export function ownerBalances(address: string): Promise<{ symbol: string; decimals: number; balance: string }[]>;
+  export function ownerSendTx(o: { symbol: string; amount: bigint | number | string; to: string }): any;
   export const USDC_TYPE: string;
   export function revokeTx(o: { grantId: string }): any;
   export function createGrantTx(o: { agent: string; weeklyBudget: number; perCallCap: number; expiresMs: number; dormancyMs: number }): any;
