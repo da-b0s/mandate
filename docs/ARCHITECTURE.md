@@ -113,7 +113,7 @@ wins over the cache immediately; the Walrus write completes in the background.
 
 ## Safety rails
 
-- Tasks: 5 per IP per 10 minutes, 60 per day across the app.
+- Tasks: 20 per connection per 10 minutes, 300 per day across the app.
 - Gas sponsorship: 3 mandate creations and 30 owner actions per owner per day, 300 a day app-wide, and
   a minimum sponsor balance.
 - Welcome credits: claimed atomically, capped at 10, paid only into a freshly signed mandate.

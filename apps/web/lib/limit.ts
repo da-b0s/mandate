@@ -1,7 +1,8 @@
-// Public demo guard: the onchain grant caps weekly spend; this stops one visitor using it all.
-const PER_IP = Number(process.env.TASKS_PER_IP ?? 5);
+// Abuse guard. Tasks now spend from each user's own mandate (whose limits the contract enforces), so this
+// only stops one connection flooding the server and our Tatum and Walrus quotas.
+const PER_IP = Number(process.env.TASKS_PER_IP ?? 20);
 const WINDOW_MS = 10 * 60 * 1000;
-const PER_DAY = Number(process.env.TASKS_PER_DAY ?? 60);
+const PER_DAY = Number(process.env.TASKS_PER_DAY ?? 300);
 
 const hits = new Map<string, number[]>();
 let day = { start: Date.now(), count: 0 };
