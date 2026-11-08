@@ -1,9 +1,12 @@
 # Tatum in MANDATE
 
-MANDATE runs on **Tatum's paid plan** (Starter: 4M credits a month, 200 requests per second), and
-Tatum is its only connection to Sui mainnet. Nothing in the app reads from or writes to the chain any
-other way. (The one exception, the vendors' own payment check inside the `@suimpp/mpp` library, is
-described in [LIMITATIONS.md](LIMITATIONS.md); the buyer side always verifies through Tatum.)
+MANDATE runs on **Tatum's paid plan** (Starter: 4M credits a month, 200 requests per second). Every
+read the agent makes and every transaction it builds, submits and confirms goes through Tatum.
+
+Three things talk to the chain without us choosing the endpoint, and are not on the agent's path:
+the vendors' own payment check inside `@suimpp/mpp` (see [LIMITATIONS.md](LIMITATIONS.md); the buyer
+always re-verifies through Tatum), Aftermath's routing service when it prices a swap, and the
+one-off publish and upgrade scripts for the Move package.
 
 ## Sui mainnet gRPC gateway (the core path)
 
