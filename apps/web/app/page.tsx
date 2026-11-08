@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/icons";
 import { agent } from "@/lib/agent";
 
 // Numbers on the homepage come from real receipts and the committed replay; refresh every 5 minutes.
@@ -27,19 +28,19 @@ async function stats() {
 }
 
 const LEFT = [
-  { icon: "🔎", title: "Buy information", body: "Pays data services a few cents per answer, like checking whether a wallet is linked to scams." },
-  { icon: "📤", title: "Send money", body: "Pays people once, or on a schedule: “send 5 USDC to Ada every week”." },
+  { icon: "search", title: "Buy information", body: "Pays data services a few cents per answer, like checking whether a wallet is linked to scams." },
+  { icon: "send", title: "Send money", body: "Pays people once, or on a schedule: “send 5 USDC to Ada every week”." },
 ];
 const RIGHT = [
-  { icon: "🔄", title: "Swap coins", body: "Turns USDC into SUI, WAL or DEEP at the best price, straight to your wallet." },
-  { icon: "🧠", title: "Learns what's worth it", body: "Remembers your ratings on Walrus, so it stops paying for sources that never help." },
+  { icon: "swap", title: "Swap coins", body: "Turns USDC into SUI, WAL or DEEP at the best price, straight to your wallet." },
+  { icon: "memory", title: "Learns what's worth it", body: "Remembers your ratings on Walrus, so it stops paying for sources that never help." },
 ];
 
 const STEPS = [
-  { icon: "👤", title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent." },
-  { icon: "📏", title: "Set its rules", body: "A weekly allowance and a maximum per payment. Sign once." },
-  { icon: "💵", title: "Add some USDC", body: "The first users get a welcome credit. Otherwise a few dollars is plenty, and you can take it back any time." },
-  { icon: "💬", title: "Chat with it", body: "Ask in plain words. It does the job and shows the receipt." },
+  { icon: "user", title: "Sign in with Google", body: "No crypto wallet needed. You get your own agent." },
+  { icon: "sliders", title: "Set its rules", body: "A weekly allowance and a maximum per payment. Sign once." },
+  { icon: "coins", title: "Add some USDC", body: "A few dollars is plenty, and you can take it back any time." },
+  { icon: "chat", title: "Chat with it", body: "Ask in plain words. It does the job and shows the receipt." },
 ];
 
 const RULES = [
@@ -83,11 +84,7 @@ export default async function Home() {
             Explore real payments ↗
           </Link>
         </div>
-        {s.creditsLeft ? (
-          <p className="small muted" style={{ marginTop: 14 }}>
-            🎁 The first users get a {(s.credit / 1e6).toFixed(2)} USDC welcome credit to try it. {s.creditsLeft} left.
-          </p>
-        ) : null}
+
         <div className="statstrip">
           <div>
             <b>−{s.wasteCut}%</b>
@@ -132,7 +129,9 @@ export default async function Home() {
         <div className="steps4">
           {STEPS.map((x, i) => (
             <div key={x.title} className="glass step4">
-              <div className="ficon">{x.icon}</div>
+              <div className="ficon">
+                <Icon name={x.icon} size={20} />
+              </div>
               <div className="small faint">Step {i + 1}</div>
               <strong>{x.title}</strong>
               <p>{x.body}</p>
@@ -233,7 +232,9 @@ function Feat({ icon, title, body }: { icon: string; title: string; body: string
   return (
     <div className="feat">
       <strong>
-        <span className="ficon">{icon}</span>
+        <span className="ficon">
+          <Icon name={icon} />
+        </span>
         {title}
       </strong>
       <p>{body}</p>

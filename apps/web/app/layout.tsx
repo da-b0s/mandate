@@ -12,17 +12,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <header className="top">
-          <div className="wrap">
-            <a href="/" className="brand">
-              <span className="logo" /> MANDATE
-            </a>
-            <Nav />
-          </div>
-        </header>
-        <main className="wrap">
-          <Providers>{children}</Providers>
-        </main>
+        <Providers>
+          <header className="top">
+            <div className="wrap">
+              <a href="/" className="brand">
+                <span className="logo" /> MANDATE
+              </a>
+              <Nav />
+            </div>
+          </header>
+          <main className="wrap">{children}</main>
+        </Providers>
       </body>
     </html>
   );

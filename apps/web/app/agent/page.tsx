@@ -100,7 +100,7 @@ export default function AgentPage() {
               It checks wallets and tokens, sends money and swaps coins, always inside the rules of its mandate. Every payment gets a receipt.
             </p>
             <div style={{ width: "100%", marginTop: 22, textAlign: "left" }}>
-              <YourAgent compact />
+              <YourAgent />
             </div>
             {ready && <div className="suggest">
               {examples.map((e) => (
@@ -180,7 +180,7 @@ function MandateChip({ refreshKey, mine }: { refreshKey: number; mine: boolean }
       ) : (
         <span>· reading Sui…</span>
       )}
-      <span>⚙</span>
+      <span>Settings</span>
     </Link>
   );
 }
@@ -220,6 +220,15 @@ function Exchange({ run, onRated }: { run: Run; onRated: (r: Record<string, any>
           {r && (
             <>
               <div className="answer">{r.answer}</div>
+              {r.denied.some((d: any) => d.reason === "funds") && (
+                <div className="card notice">
+                  <strong>Your mandate has no money yet, so I couldn&apos;t buy anything.</strong>
+                  <div className="small muted">Paid checks, transfers and swaps are paid from your mandate. Add a little USDC and ask again.</div>
+                  <Link href="/mandate#money" className="btn primary" style={{ marginTop: 10 }}>
+                    Add money
+                  </Link>
+                </div>
+              )}
               <div className="row small meta">
                 <span className={`pill ${r.totalSpent ? "" : "ok"}`}>{r.totalSpent ? `spent ${usdc(r.totalSpent)}` : "spent nothing"}</span>
                 {r.skipped.length > 0 && <span className="pill warn">skipped {r.skipped.length}</span>}
@@ -288,59 +297,60 @@ function StepText({ s }: { s: Step }) {
 
 function StepLine({ s }: { s: Step }) {
   const svc = s.service ? <strong>{serviceName(s.service)}</strong> : null;
-  const line = (icon: string, body: React.ReactNode, tone?: string) => (
+  // The icon argument is kept for readability of the cases below but no longer drawn: a dot carries the tone.
+  const line = (_icon: string, body: React.ReactNode, tone?: string) => (
     <li style={tone ? { color: `var(--${tone})` } : undefined}>
-      <span className="icon">{icon}</span>
+      <span className={`sdot ${tone ?? ""}`} />
       <span>{body}</span>
     </li>
   );
   switch (s.step) {
     case "classified":
-      return line("🔎", <>Task: {({ "wallet-risk": "wallet risk check", "token-holders": "token holder check", transfer: "transfer", swap: "swap", unknown: "not recognised" } as any)[s.type] ?? s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
+      return line("", <>Task: {({ "wallet-risk": "wallet risk check", "token-holders": "token holder check", transfer: "transfer", swap: "swap", unknown: "not recognised" } as any)[s.type] ?? s.type} {s.subject && <code>{short(s.subject, 10)}</code>}</>);
     case "free-read":
-      return line("🆓", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
+      return line("", <>Free check first ({s.source}): {s.flagged ? <strong>flagged by {s.list}</strong> : "not flagged"}</>, s.flagged ? "bad" : undefined);
     case "transfer":
-      return line("📤", <>Send {usdc(s.amount)} to <code>{short(s.recipient, 10)}</code>{s.intervalMs ? " (recurring)" : ""}</>);
+      return line("", <>Send {usdc(s.amount)} to <code>{short(s.recipient, 10)}</code>{s.intervalMs ? " (recurring)" : ""}</>);
     case "sent":
-      return line("💸", <>Sent, and recorded on your mandate in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
+      return line("", <>Sent, and recorded on your mandate in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
     case "swap":
-      return line("🔄", <>Swap {usdc(s.amount)} into {s.symbol}, delivered to your wallet</>);
+      return line("", <>Swap {usdc(s.amount)} into {s.symbol}, delivered to your wallet</>);
     case "swap-quote":
-      return line("🧾", <>Best route via Aftermath: about {(Number(s.expected) / 10 ** (s.symbol === "DEEP" ? 6 : 9)).toFixed(4)} {s.symbol} <span className="muted">(max 1% slippage)</span></>);
+      return line("", <>Best route via Aftermath: about {(Number(s.expected) / 10 ** (s.symbol === "DEEP" ? 6 : 9)).toFixed(4)} {s.symbol} <span className="muted">(max 1% slippage)</span></>);
     case "swapped":
-      return line("💱", <>Swapped from the mandate; limits checked and coins sent to the owner in one transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
+      return line("", <>Swapped from the mandate; limits checked and coins sent to the owner in one transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>, "ok");
     case "scheduled":
-      return line("🔁", <>Scheduled {s.every}; next payment {new Date(s.nextAt).toLocaleString()}</>);
+      return line("", <>Scheduled {s.every}; next payment {new Date(s.nextAt).toLocaleString()}</>);
     case "planned":
-      return line("🗺", <>Plan: {s.plan.map(serviceName).join(" → ") || "nothing to buy"}</>);
+      return line("", <>Plan: {s.plan.map(serviceName).join(" → ") || "nothing to buy"}</>);
     case "skipped":
-      return line("⏭", <>Skipped {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "warn");
+      return line("", <>Skipped {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "warn");
     case "denied":
-      return line("⛔", <>Your mandate refused {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "bad");
+      return line("", <>Your mandate refused {svc}: {reason(s.reason)} <span className="muted">({s.detail})</span></>, "bad");
     case "buying":
-      return line("🛒", <>Buying {svc} for {usdc(s.price)}</>);
+      return line("", <>Buying {svc} for {usdc(s.price)}</>);
     case "quote":
-      return line("🧾", <>Quote from {svc}: {usdc(s.amount)} to <code>{short(s.recipient)}</code></>);
+      return line("", <>Quote from {svc}: {usdc(s.amount)} to <code>{short(s.recipient)}</code></>);
     case "grant-ok":
-      return line("✅", <>Mandate allows it: {usdc(s.spentThisWeek)} of {usdc(s.weeklyBudget)} spent this week <span className="muted">(read via Tatum)</span></>);
+      return line("", <>Mandate allows it: {usdc(s.spentThisWeek)} of {usdc(s.weeklyBudget)} spent this week <span className="muted">(read via Tatum)</span></>);
     case "paid":
-      return line("💸", <>Paid {svc} from the mandate; the contract checked the limits in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
+      return line("", <>Paid {svc} from the mandate; the contract checked the limits in the same transaction: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
     case "verified":
-      return line("🛡", <>Payment verified through Tatum gRPC</>, "ok");
+      return line("", <>Payment verified through Tatum gRPC</>, "ok");
     case "recorded":
-      return line("⛓", <>Spend recorded on the grant: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
+      return line("", <>Spend recorded on the grant: <a href={suiscanTx(s.digest)} target="_blank">{short(s.digest, 8)}</a></>);
     case "delivery-failed":
       return s.refundWorthy
-        ? line("⚠", <>{svc} took payment but did not deliver (HTTP {s.status}); marked refund-worthy and remembered</>, "bad")
-        : line("ℹ", <>{svc} could not serve this request, so nothing was charged <span className="muted">({s.status})</span></>, "warn");
+        ? line("", <>{svc} took payment but did not deliver (HTTP {s.status}); marked refund-worthy and remembered</>, "bad")
+        : line("", <>{svc} could not serve this request, so nothing was charged <span className="muted">({s.status})</span></>, "warn");
     case "archived":
-      return line("🗄", <>Full report archived on Walrus via Tatum Storage: <a href={walruscan(s.blobId)} target="_blank">{short(s.blobId, 8)}</a></>);
+      return line("", <>Full report archived on Walrus via Tatum Storage: <a href={walruscan(s.blobId)} target="_blank">{short(s.blobId, 8)}</a></>);
     case "record-failed":
-      return line("⚠", <>Paid, but recording on the grant failed; queued for retry</>, "warn");
+      return line("", <>Paid, but recording on the grant failed; queued for retry</>, "warn");
     case "answering":
-      return line("✍", <>Writing the answer</>);
+      return line("", <>Writing the answer</>);
     case "done":
-      return line("🏁", <>Done</>);
+      return line("", <>Done</>);
     default:
       return null;
   }

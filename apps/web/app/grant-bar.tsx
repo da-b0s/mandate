@@ -39,7 +39,7 @@ export function GrantBar({ refreshKey = 0, label = "Mandate" }: { refreshKey?: n
       </div>
       <div className="row" style={{ justifyContent: "space-between" }}>
         <span>
-          🔒 <strong>{g ? usdc(g.held ?? 0) : "…"}</strong> held by the contract
+          <strong>{g ? usdc(g.held ?? 0) : "…"}</strong> held by the contract
         </span>
         <span className="muted">limits enforced onchain · only the owner can withdraw</span>
       </div>

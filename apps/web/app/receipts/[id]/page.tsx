@@ -88,7 +88,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
                     <td>{p.service}</td>
                     <td>{usdc(p.amount)}</td>
                     <td><a href={suiscanTx(p.digest)} target="_blank" className="mono">{short(p.digest, 8)}</a></td>
-                    <td>{p.verifiedVia === "tatum-grpc" ? "Tatum gRPC ✓" : "—"}</td>
+                    <td>{p.verifiedVia === "tatum-grpc" ? "verified via Tatum" : "—"}</td>
                     <td>{p.recordDigest ? <a href={suiscanTx(p.recordDigest)} target="_blank" className="mono">{short(p.recordDigest, 8)}</a> : "—"}</td>
                     <td>{r.ratings?.[p.service]?.rating ?? <span className="muted">unrated</span>}</td>
                   </tr>

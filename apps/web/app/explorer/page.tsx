@@ -167,7 +167,7 @@ export default async function ProofPage() {
                   <td>{serviceName(x.service)}</td>
                   <td>{usdc(x.amount)}</td>
                   <td><a href={suiscanTx(x.digest)} target="_blank" className="mono">{short(x.digest, 8)}</a></td>
-                  <td>{x.verifiedVia === "tatum-grpc" ? "Tatum ✓" : "—"}</td>
+                  <td>{x.verifiedVia === "tatum-grpc" ? "verified" : "—"}</td>
                   <td>{x.recordDigest ? <a href={suiscanTx(x.recordDigest)} target="_blank" className="mono">{short(x.recordDigest, 8)}</a> : "—"}</td>
                 </tr>
               ))}

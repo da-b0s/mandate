@@ -31,7 +31,7 @@ export function Schedules() {
           <tbody>
             {list.map((s) => (
               <tr key={s.id}>
-                <td>{s.recipient.startsWith("swap:") ? <span>🔄 buy {s.recipient.slice(5)} <span className="small muted">(to you)</span></span> : <span className="mono">{short(s.recipient, 10)}</span>}</td>
+                <td>{s.recipient.startsWith("swap:") ? <span>Buy {s.recipient.slice(5)} <span className="small muted">(to you)</span></span> : <span className="mono">{short(s.recipient, 10)}</span>}</td>
                 <td>{usdc(s.amount)}</td>
                 <td>{every(s.interval_ms)}</td>
                 <td className="small">{s.active ? new Date(s.next_at).toLocaleString() : <span className="pill">stopped</span>}</td>

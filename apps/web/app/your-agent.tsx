@@ -1,68 +1,67 @@
 "use client";
-import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SignIn, useOwner } from "@/lib/owner";
-import { short, suiscanObj, usdc } from "@/lib/format";
+import { useOwnerAction } from "@/lib/owner-action";
+import { usdc } from "@/lib/format";
+import { Icon } from "@/components/icons";
+import { RulesForm } from "./rules-form";
 
 /**
- * Where the visitor stands, as one checklist: sign in -> create agent -> set rules -> add USDC -> ask.
- * Visitors who are not signed in see the demo notice instead. Once everything is done, a slim bar remains.
+ * The whole setup in one place, in order: sign in -> set rules -> add money. Each step opens right
+ * here (no page hopping), ticks itself off, and the guide disappears once the agent is ready.
+ * The agent itself is created automatically right after sign-in.
  */
-export function YourAgent({ compact = false, onMandatePage = false }: { compact?: boolean; onMandatePage?: boolean }) {
+export function YourAgent() {
   const o = useOwner();
   const me = o.me;
-  const [busy, setBusy] = useState(false);
+  const { busy, result, act } = useOwnerAction();
   const [copied, setCopied] = useState(false);
+  const creating = useRef(false);
 
-  if (!me) return <div className="card small muted" style={{ minHeight: 76 }}>Checking who you are…</div>;
+  // Signed in but no agent yet: make one, no button needed.
+  useEffect(() => {
+    if (me?.owner && me.agent === null && !creating.current) {
+      creating.current = true;
+      fetch("/api/agent", { method: "POST" }).then(() => o.refreshMe());
+    }
+  }, [me?.owner, me?.agent]);
+
+  if (!me) return <div className="card small muted" style={{ minHeight: 76 }}>Loading…</div>;
 
   const a = me.agent;
   const steps = [
     { title: "Sign in", done: Boolean(me.owner) },
-    { title: "Create your agent", done: Boolean(a) },
-    { title: "Set its rules", done: Boolean(a?.grantId) },
-    { title: "Add USDC", done: Boolean(a && a.usdc > 0) },
-    { title: "Ask it something", done: false },
+    { title: "Set your agent's rules", done: Boolean(a?.grantId) },
+    { title: "Add money", done: Boolean(a && a.usdc > 0) },
   ];
   const current = steps.findIndex((s) => !s.done);
-  const setupDone = current >= 4;
-
-  if (setupDone) {
-    return (
-      <div className="card row small" style={{ justifyContent: "space-between" }}>
-        <div className="row">
-          <strong>Your agent</strong>
-          <a href={suiscanObj(a!.grantId!)} target="_blank" className="mono">
-            mandate {short(a!.grantId!)}
-          </a>
-          <span className="pill ok">{usdc(a!.usdc)} available</span>
-        </div>
-        {!compact && <SignIn />}
-      </div>
-    );
-  }
+  if (current === -1) return result?.credit ? <Bonus amount={result.credit} /> : null;
 
   return (
     <div className="card stack setup">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 style={{ margin: 0 }}>Set up your agent</h2>
-        <span className="small muted">about 2 minutes · gas is on us</span>
+        <span className="small muted">
+          step {current + 1} of {steps.length} · free, gas is on us
+        </span>
       </div>
       <ol className="checklist">
         {steps.map((s, i) => (
           <li key={s.title} className={s.done ? "done" : i === current ? "now" : ""}>
-            <span className="tick">{s.done ? "✓" : i + 1}</span>
+            <span className="tick">{s.done ? <Icon name="check" size={14} /> : i + 1}</span>
             <div className="stack" style={{ flex: 1 }}>
               <strong>{s.title}</strong>
-              {i === current && <StepBody i={i} />}
+              {i === current && body(i)}
             </div>
           </li>
         ))}
       </ol>
+      {result && !result.ok && <div className="pill bad">{result.text}</div>}
+      {result?.ok && result.credit ? <Bonus amount={result.credit} /> : null}
     </div>
   );
 
-  function StepBody({ i }: { i: number }) {
+  function body(i: number) {
     if (i === 0)
       return (
         <>
@@ -71,44 +70,21 @@ export function YourAgent({ compact = false, onMandatePage = false }: { compact?
         </>
       );
     if (i === 1)
-      return (
+      return a ? (
         <>
-          <span className="small muted">Your agent gets its own address. It can only ever spend inside the rules you set in the next step.</span>
-          <div>
-            <button
-              className="primary"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                await fetch("/api/agent", { method: "POST" });
-                await o.refreshMe();
-                setBusy(false);
-              }}
-            >
-              {busy ? "Creating…" : "Create my agent"}
-            </button>
-          </div>
+          <span className="small muted">
+            These limits are stored in a smart contract. Your agent can never go past them, and only you can change them. The defaults are fine to start.
+          </span>
+          <RulesForm compact disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
         </>
-      );
-    if (i === 2)
-      return onMandatePage ? (
-        <span className="small muted">Fill in the form below and press “Sign my rules”. You can change them later by signing new ones.</span>
       ) : (
-        <>
-          <span className="small muted">Choose a weekly allowance and a maximum per payment, then sign once.</span>
-          <div>
-            <Link href="/mandate#rules" className="btn primary">
-              Set my rules →
-            </Link>
-          </div>
-        </>
+        <span className="small muted">Creating your agent…</span>
       );
-    // i === 3: fund
     return (
       <>
         <span className="small muted">
-          Send a little USDC on Sui to your agent&apos;s address (0.50 covers plenty of tasks). It moves into your mandate, where the rules apply, and you
-          can withdraw it any time.
+          Your agent spends from its mandate, which is empty. Send a little USDC on Sui to the address below (0.50 is plenty to try everything). You can take
+          it back any time in Settings.
         </span>
         <div className="row">
           <code style={{ wordBreak: "break-all" }}>{a!.address}</code>
@@ -122,8 +98,17 @@ export function YourAgent({ compact = false, onMandatePage = false }: { compact?
           </button>
           <button onClick={() => o.refreshMe()}>I sent it, check again</button>
         </div>
-        <span className="small muted">No USDC yet? Free checks, like spotting sanctioned wallets, already work.</span>
+        <span className="small muted">You can already chat: free checks, like spotting sanctioned wallets, need no money.</span>
       </>
     );
   }
+}
+
+function Bonus({ amount }: { amount: number }) {
+  return (
+    <div className="card bonus">
+      <strong>Welcome bonus: {usdc(amount)} added to your mandate.</strong>
+      <div className="small muted">Enough to try a few paid checks, a transfer and a swap. It follows the same rules as any money you add.</div>
+    </div>
+  );
 }

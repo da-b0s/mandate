@@ -1,21 +1,20 @@
 "use client";
 import { useOwner } from "@/lib/owner";
+import { useOwnerAction } from "@/lib/owner-action";
+import { RulesForm } from "../rules-form";
 import { useEffect, useState } from "react";
 import { short, suiscanTx, TASK_TYPES, usdc, walruscan } from "@/lib/format";
 import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
 import { Schedules } from "./schedules";
 
-type Result = { ok: boolean; text: string; digest?: string; memoryBlob?: string };
-
 // The owner's console: the agent proposes, the owner decides, the chain enforces.
 export default function MandatePage() {
   const owner = useOwner();
   const account = owner.address ? { address: owner.address } : null;
   const [data, setData] = useState<any>(null);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const { busy, result, act } = useOwnerAction(() => setRefresh((n) => n + 1));
 
   useEffect(() => {
     fetch("/api/proposals").then((r) => r.json()).then(setData);
@@ -24,27 +23,6 @@ export default function MandatePage() {
   const isOwner = account && data && account.address === data.owner;
   // Signed in with an agent but no mandate yet: they may create their first one.
   const needsMandate = Boolean(owner.me?.agent && !owner.me.agent.grantId);
-
-  async function act(key: string, body: Record<string, unknown>) {
-    if (!account) return;
-    setBusy(key);
-    setResult(null);
-    try {
-      const built = await fetch("/api/owner/build", { method: "POST", body: JSON.stringify({ ...body, sender: account.address }) }).then((r) => r.json());
-      if (built.error) throw new Error(built.error);
-      const signature = await owner.signTransaction(built.bytes);
-      const sent = await fetch("/api/owner/submit", { method: "POST", body: JSON.stringify({ bytes: built.bytes, signature, action: body.action }) }).then((r) => r.json());
-      if (sent.error) throw new Error(sent.error);
-      const credit = sent.credit?.amount ? ` 🎁 We added a ${usdc(sent.credit.amount)} welcome credit to your mandate.` : sent.credit?.skipped ? ` (No welcome credit: ${sent.credit.skipped}.)` : "";
-      setResult({ ok: true, text: ({ create: "Rules signed. Your agent now follows them.", cap: "Change approved on Sui.", heartbeat: "Checked in. The auto-freeze timer restarted.", revoke: "Mandate stopped for good.", withdraw: "Your USDC is on its way to your wallet." } as Record<string, string>)[String(body.action)] + (body.action === "create" ? credit : "") || "Confirmed on Sui", digest: sent.digest, memoryBlob: sent.ratification?.memoryBlob });
-      setRefresh((n) => n + 1);
-      await owner.refreshMe();
-    } catch (e) {
-      setResult({ ok: false, text: String((e as Error).message ?? e) });
-    } finally {
-      setBusy(null);
-    }
-  }
 
   const agentAddress = owner.me?.agent?.address;
   const hasOwn = Boolean(owner.me?.agent?.grantId);
@@ -64,12 +42,7 @@ export default function MandatePage() {
         <p className="muted" style={{ marginTop: 0 }}>
           Your agent&apos;s money and rules. Every change here is signed by you and enforced by the contract on Sui.
         </p>
-        <YourAgent onMandatePage />
-        {needsMandate && (
-          <Section id="rules" title="Rules">
-            <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
-          </Section>
-        )}
+        <YourAgent />
         {hasOwn && (<>
         {result && (
           <div className="card small" style={{ marginTop: 12 }}>
@@ -120,7 +93,7 @@ export default function MandatePage() {
         </Section>
 
         <Section id="rules" title="Rules">
-          <CreateMandate disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
+          <RulesForm disabled={busy !== null} busy={busy === "create"} onCreate={(f) => act("create", { action: "create", ...f })} />
         </Section>
 
         <Section id="safety" title="Pause & stop">
@@ -238,39 +211,6 @@ function Section({ id, title, children }: { id: string; title: string; children:
       <div className="section-title" id={id}>{title}</div>
       {children}
     </>
-  );
-}
-
-type MandateForm = { weeklyUsdc: string; perCallUsdc: string; days: string; heartbeatHours: string };
-
-// Blueprint 3.2: the owner sets the limits; the agent is named in the grant but cannot change them.
-function CreateMandate({ disabled, busy, onCreate }: { disabled: boolean; busy: boolean; onCreate: (f: MandateForm) => void }) {
-  const [f, setF] = useState<MandateForm>({ weeklyUsdc: "2", perCallUsdc: "0.10", days: "30", heartbeatHours: "168" });
-  const field = (k: keyof MandateForm, label: string, hint: string) => (
-    <label className="field">
-      <span>{label}</span>
-      <input value={f[k]} inputMode="decimal" onChange={(e) => setF({ ...f, [k]: e.target.value })} />
-      <span className="hint2">{hint}</span>
-    </label>
-  );
-  return (
-    <div className="card stack">
-      <h2>Set your agent&apos;s rules</h2>
-      <p className="small muted" style={{ margin: 0 }}>
-        You sign these once; the agent can never change them. Signing new rules later replaces the old ones (their history stays on Sui). Gas is on us.
-      </p>
-      <div className="grid">
-        {field("weeklyUsdc", "Weekly allowance (USDC)", "the most it can spend in any 7 days")}
-        {field("perCallUsdc", "Maximum per payment (USDC)", "for any one purchase, transfer or swap")}
-        {field("days", "Valid for (days)", "after this, every payment is refused")}
-        {field("heartbeatHours", "Auto-freeze after (hours)", "if you don't check in for this long")}
-      </div>
-      <div>
-        <button className="primary" disabled={disabled} onClick={() => onCreate(f)}>
-          {busy ? "Signing…" : "Sign my rules"}
-        </button>
-      </div>
-    </div>
   );
 }
 
