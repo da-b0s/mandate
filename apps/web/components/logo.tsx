@@ -9,7 +9,7 @@ export function Logo({ size = 22 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect x="6" y="12" width="52" height="40" rx="9" fill="none" stroke="url(#mandate-logo)" strokeWidth="5" />
-      <path d="M17 42V24l8 10 7-10 7 10 8-10v18" fill="none" stroke="url(#mandate-logo)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M19 43V22l13 14 13-14v21" fill="none" stroke="url(#mandate-logo)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
