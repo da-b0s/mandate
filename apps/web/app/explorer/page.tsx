@@ -7,175 +7,185 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Explorer" };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+const LATEST = 10;
 
-// One page of checkable evidence: onchain objects, every payment, every memory, the replay result.
-export default async function ProofPage() {
+// The headline evidence up top; the full record (every payment, memory and test run) folded below.
+export default async function ExplorerPage() {
   const a = await agent();
   const p = await asSessionAgent(() => a.proofData());
   const off = p.replay.filter((r: any) => r.mode === "off").at(-1);
   const on = p.replay.filter((r: any) => r.mode === "on").at(-1);
-  const memTotal = Array.isArray(p.memories) ? p.memories.reduce((s: number, n: any) => s + n.memories, 0) : null;
+  const memories = Array.isArray(p.memories) ? p.memories : [];
+  const memTotal = memories.reduce((s: number, n: any) => s + n.memories, 0);
+  const moved = p.payments.reduce((s: number, x: any) => s + (x.amount ?? 0), 0);
+  const verified = p.payments.filter((x: any) => x.verifiedVia === "tatum-grpc").length;
 
   return (
     <div className="stack">
       <div>
         <h1>Explorer</h1>
-        <p className="muted small" style={{ margin: 0 }}>
-          Every payment, mandate and memory behind MANDATE, on Sui mainnet or Walrus. Chain state is read live through Tatum gRPC; click any link to check it yourself.
+        <p className="muted" style={{ margin: 0 }}>
+          The record behind MANDATE. Every number links to Sui mainnet or Walrus, so you can check it yourself.
         </p>
       </div>
 
       <div className="grid">
-        <Stat label="Payments" value={String(p.payments.length)} note="real USDC on mainnet" />
-        <Stat label="Memories on Walrus" value={memTotal == null ? "—" : String(memTotal)} note={`${Array.isArray(p.memories) ? p.memories.length : 0} namespaces`} />
-        <Stat label="Mandates" value={String(p.grants.length)} note="onchain spending limits" />
-        <Stat label="Replay runs" value={String(p.replay.length)} note="50 fixed tasks each" />
+        <Stat label="Payments on Sui mainnet" value={String(p.payments.length)} note={`${usdc(moved)} moved in total`} />
+        <Stat label="Checked through Tatum" value={pct(p.payments.length ? verified / p.payments.length : 0)} note="each payment re-read and confirmed" />
+        <Stat label="Memories on Walrus" value={String(memTotal)} note="ratings, receipts and preferences" />
+        {off && on && <Stat label="Wasted spend once it learns" value={pct(on.totals.wasted / off.totals.wasted - 1)} note="same 50 tasks, memory on vs off" />}
       </div>
 
       {off && on && (
         <div className="card stack">
-          <h2>Learning replay: same 50 tasks, memory OFF vs ON</h2>
+          <h2>Does the memory pay off? Same 50 tasks, memory off vs on</h2>
           <div className="scroll-x">
             <table>
               <thead>
-                <tr><th></th><th>Memory OFF</th><th>Memory ON</th><th>Change</th></tr>
+                <tr><th></th><th>Memory off</th><th>Memory on</th><th>Change</th></tr>
               </thead>
               <tbody>
                 <Row label="Total spent" a={usdc(off.totals.spent)} b={usdc(on.totals.spent)} d={pct(on.totals.spent / off.totals.spent - 1)} />
-                <Row label="Wasted spend" a={usdc(off.totals.wasted)} b={usdc(on.totals.wasted)} d={pct(on.totals.wasted / off.totals.wasted - 1)} />
-                <Row label="Wasted share of spend" a={pct(off.totals.wastedRate)} b={pct(on.totals.wastedRate)} d="" />
-                <Row label="Useful answers" a={String(off.totals.usefulAnswers)} b={String(on.totals.usefulAnswers)} d="" />
+                <Row label="Wasted on useless sources" a={usdc(off.totals.wasted)} b={usdc(on.totals.wasted)} d={pct(on.totals.wasted / off.totals.wasted - 1)} />
                 <Row label="Cost per useful answer" a={usdc(off.totals.costPerUsefulAnswer)} b={usdc(on.totals.costPerUsefulAnswer)} d={pct(on.totals.costPerUsefulAnswer / off.totals.costPerUsefulAnswer - 1)} />
-                <Row label="Paid calls" a={String(off.totals.payments)} b={String(on.totals.payments)} d="" />
+                <Row label="Useful answers" a={String(off.totals.usefulAnswers)} b={String(on.totals.usefulAnswers)} d="" />
               </tbody>
             </table>
           </div>
           <p className="small muted" style={{ margin: 0 }}>
-            Method: scripts/replay.js runs scripts/tasks.json in a different order per run, real payments, ratings from a deterministic rater
-            (docs/adr/0001-scripted-rater.md). The ON run starts with empty memory and learns during the run. Raw results: docs/replay/.
+            Real payments, run with scripts/replay.js. The memory-on run starts empty and learns as it goes. Raw results are in docs/replay/ in the repository.
           </p>
         </div>
       )}
 
-      {p.dormancy && (
-        <div className="card stack">
-          <h2>Dead man&apos;s switch, live on mainnet</h2>
-          <p className="small muted" style={{ margin: 0 }}>
-            Grant <a href={suiscanObj(p.dormancy.grantId)} target="_blank" className="mono">{short(p.dormancy.grantId, 10)}</a> with a{" "}
-            {p.dormancy.dormancyMs / 60000}-minute heartbeat window (scripts/dormancy-demo.js).
-          </p>
+      <div className="card stack">
+        <h2>The contract that enforces the rules</h2>
+        <p className="small muted" style={{ margin: 0 }}>
+          <code>mandate::grant</code> on Sui mainnet holds each user&apos;s USDC and checks every payment, transfer and swap against their limits in the same
+          transaction.
+        </p>
+        <div className="row small">
+          <a href={suiscanObj(p.package.originalId)} target="_blank" className="btn">
+            View the contract ↗
+          </a>
+          {p.package.upgradeDigest && (
+            <a href={suiscanTx(p.package.upgradeDigest)} target="_blank" className="btn">
+              Latest upgrade ↗
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div className="card stack">
+        <h2>Latest payments</h2>
+        <PaymentTable rows={p.payments.slice(0, LATEST)} />
+      </div>
+
+      <details className="card">
+        <summary style={{ cursor: "pointer" }}>
+          <strong>All evidence</strong> <span className="small muted">every payment, mandate, memory and the dead man&apos;s switch test</span>
+        </summary>
+        <div className="stack" style={{ marginTop: 16 }}>
+          <h2>Mandates</h2>
           <div className="scroll-x">
             <table>
-              <thead><tr><th>Time (UTC)</th><th>Event</th><th>Result</th></tr></thead>
+              <thead>
+                <tr><th>Mandate</th><th>Held</th><th>Weekly allowance</th><th>Per payment</th><th>Spent this week</th><th>Payments</th></tr>
+              </thead>
               <tbody>
-                {p.dormancy.log.map((e: any, i: number) => (
-                  <tr key={i}>
-                    <td className="mono">{e.at.slice(11, 19)}</td>
-                    <td>{e.event.replaceAll("-", " ")}</td>
-                    <td className="small">
-                      {e.tx && <a href={suiscanTx(e.tx)} target="_blank" className="mono">{short(e.tx, 8)}</a>}
-                      {e.paid?.map((d: string) => (
-                        <span key={d}><span className="pill ok">paid</span> <a href={suiscanTx(d)} target="_blank" className="mono">{short(d, 8)}</a> </span>
-                      ))}
-                      {e.denied?.map((d: string) => <span key={d} className="pill bad">GRANT_DENIED: {d}</span>)}
-                      {e.waitSeconds && <span className="muted">no heartbeat for {e.waitSeconds}s</span>}
-                    </td>
+                {p.grants.map((g: any) => (
+                  <tr key={g.id}>
+                    <td><a href={suiscanObj(g.id)} target="_blank" className="mono">{short(g.id, 10)}</a></td>
+                    <td>{usdc(g.held ?? 0)}</td>
+                    <td>{usdc(g.weeklyBudget)}</td>
+                    <td>{usdc(g.perCallCap)}</td>
+                    <td>{usdc(g.spentThisWeek)}</td>
+                    <td>{g.payments}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
 
-      <div className="card stack">
-        <h2>Onchain objects</h2>
-        <div className="small stack">
-          <div>
-            Package <code>mandate::grant</code>, first published as{" "}
-            <a href={suiscanObj(p.package.originalId)} target="_blank" className="mono">{short(p.package.originalId, 10)}</a> in{" "}
-            <a href={suiscanTx(p.package.publishDigest)} target="_blank" className="mono">{short(p.package.publishDigest, 8)}</a>.
+          {p.dormancy && (
+            <>
+              <h2>Dead man&apos;s switch, tested on mainnet</h2>
+              <p className="small muted" style={{ margin: 0 }}>
+                A mandate with a {p.dormancy.dormancyMs / 60000}-minute check-in window: paying, going quiet, being refused, checking in, paying again.
+              </p>
+              <div className="scroll-x">
+                <table>
+                  <thead><tr><th>Time (UTC)</th><th>Event</th><th>Result</th></tr></thead>
+                  <tbody>
+                    {p.dormancy.log.map((e: any, i: number) => (
+                      <tr key={i}>
+                        <td className="mono">{e.at.slice(11, 19)}</td>
+                        <td>{e.event.replaceAll("-", " ")}</td>
+                        <td className="small">
+                          {e.tx && <a href={suiscanTx(e.tx)} target="_blank" className="mono">{short(e.tx, 8)}</a>}
+                          {e.paid?.map((d: string) => (
+                            <span key={d}><span className="pill ok">paid</span> <a href={suiscanTx(d)} target="_blank" className="mono">{short(d, 8)}</a> </span>
+                          ))}
+                          {e.denied?.map((d: string) => <span key={d} className="pill bad">refused: {d}</span>)}
+                          {e.waitSeconds && <span className="muted">no check-in for {e.waitSeconds}s</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          <h2>Walrus Memory</h2>
+          <div className="scroll-x">
+            <table>
+              <thead><tr><th>Namespace</th><th>Memories</th><th>Size</th></tr></thead>
+              <tbody>
+                {memories.map((n: any) => (
+                  <tr key={n.name}><td className="mono">{n.name}</td><td>{n.memories}</td><td>{(n.bytes / 1024).toFixed(1)} KB</td></tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          {p.package.upgradeDigest && (
-            <div>
-              Upgraded to hold funds (custody) as{" "}
-              <a href={suiscanObj(p.package.id)} target="_blank" className="mono">{short(p.package.id, 10)}</a> in{" "}
-              <a href={suiscanTx(p.package.upgradeDigest)} target="_blank" className="mono">{short(p.package.upgradeDigest, 8)}</a>: USDC sits in the
-              mandate, <code>pay</code> checks every limit in the same transaction, and only the owner can <code>withdraw</code>.
+          {p.valueBlobs.length > 0 && (
+            <div className="small">
+              Latest learned values:{" "}
+              {p.valueBlobs.slice(0, 6).map((b: any) => (
+                <span key={b.valueBlob}>
+                  <a href={walruscan(b.valueBlob)} target="_blank" className="mono">{serviceName(b.service)} v{b.version}</a>{" "}
+                </span>
+              ))}
             </div>
           )}
-        </div>
-        <div className="scroll-x">
-          <table>
-            <thead>
-              <tr><th>Mandate</th><th>Held by contract</th><th>Weekly budget</th><th>Per call</th><th>Spent this week</th><th>Payments recorded</th><th>Total spent</th></tr>
-            </thead>
-            <tbody>
-              {p.grants.map((g: any) => (
-                <tr key={g.id}>
-                  <td><a href={suiscanObj(g.id)} target="_blank" className="mono">{short(g.id, 10)}</a></td>
-                  <td>{usdc(g.held ?? 0)}</td>
-                  <td>{usdc(g.weeklyBudget)}</td>
-                  <td>{usdc(g.perCallCap)}</td>
-                  <td>{usdc(g.spentThisWeek)}</td>
-                  <td>{g.payments}</td>
-                  <td>{usdc(g.totalSpent)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <div className="card stack">
-        <h2>Walrus Memory</h2>
-        {Array.isArray(p.memories) ? (
-          <table>
-            <thead><tr><th>Namespace</th><th>Memories</th><th>Size</th></tr></thead>
-            <tbody>
-              {p.memories.map((n: any) => (
-                <tr key={n.name}><td className="mono">{n.name}</td><td>{n.memories}</td><td>{(n.bytes / 1024).toFixed(1)} KB</td></tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="pill bad">{p.memories.error}</div>
-        )}
-        {p.valueBlobs.length > 0 && (
-          <div className="small">
-            Latest value memories:{" "}
-            {p.valueBlobs.slice(0, 6).map((b: any) => (
-              <span key={b.valueBlob}>
-                <a href={walruscan(b.valueBlob)} target="_blank" className="mono">{b.service} v{b.version}</a>{" "}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="card stack">
-        <h2>Every payment</h2>
-        <div className="scroll-x">
-          <table>
-            <thead>
-              <tr><th>Task</th><th>Service</th><th>Amount</th><th>Payment</th><th>Verified</th><th>Recorded on mandate</th></tr>
-            </thead>
-            <tbody>
-              {p.payments.map((x: any) => (
-                <tr key={x.digest}>
-                  <td><Link href={`/receipts/${x.taskId}`} className="mono">{x.taskId}</Link></td>
-                  <td>{serviceName(x.service)}</td>
-                  <td>{usdc(x.amount)}</td>
-                  <td><a href={suiscanTx(x.digest)} target="_blank" className="mono">{short(x.digest, 8)}</a></td>
-                  <td>{x.verifiedVia === "tatum-grpc" ? "verified" : "—"}</td>
-                  <td>{x.recordDigest ? <a href={suiscanTx(x.recordDigest)} target="_blank" className="mono">{short(x.recordDigest, 8)}</a> : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2>Every payment ({p.payments.length})</h2>
+          <PaymentTable rows={p.payments} />
         </div>
-      </div>
-      <p className="small muted">Generated {p.generatedAt.replace("T", " ").slice(0, 19)} UTC</p>
+      </details>
+      <p className="small faint">Read live through Tatum at {p.generatedAt.replace("T", " ").slice(0, 19)} UTC</p>
+    </div>
+  );
+}
+
+function PaymentTable({ rows }: { rows: any[] }) {
+  return (
+    <div className="scroll-x">
+      <table>
+        <thead>
+          <tr><th>What</th><th>Amount</th><th>Transaction</th><th>Receipt</th></tr>
+        </thead>
+        <tbody>
+          {rows.map((x: any) => (
+            <tr key={x.digest}>
+              <td>{serviceName(x.service)}</td>
+              <td>{usdc(x.amount)}</td>
+              <td><a href={suiscanTx(x.digest)} target="_blank" className="mono">{short(x.digest, 8)}</a></td>
+              <td><Link href={`/receipts/${x.taskId}`} className="small">open</Link></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

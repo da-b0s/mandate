@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Nav } from "./nav";
 import { Providers } from "./providers";
+import { Logo } from "@/components/logo";
 
 export const metadata: Metadata = {
   title: { default: "MANDATE · a prepaid card for your AI agent", template: "%s · MANDATE" },
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="top">
             <div className="wrap">
               <a href="/" className="brand">
-                <span className="logo" /> MANDATE
+                <Logo /> MANDATE
               </a>
               <Nav />
             </div>

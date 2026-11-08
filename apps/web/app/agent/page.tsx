@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { reason, serviceName, short, suiscanTx, usdc, walruscan } from "@/lib/format";
 import { YourAgent } from "../your-agent";
+import { Logo } from "@/components/logo";
 import { useOwner } from "@/lib/owner";
 
 type Step = { step: string; at?: string; [k: string]: any };
@@ -94,7 +95,7 @@ export default function AgentPage() {
       <div className="thread">
         {runs.length === 0 ? (
           <div className="empty">
-            <span className="logo" />
+            <span style={{ marginBottom: 16 }}><Logo size={40} /></span>
             <h1>{ready ? "What should your agent do?" : "Meet your agent"}</h1>
             <p className="muted" style={{ margin: 0, maxWidth: 520 }}>
               It checks wallets and tokens, sends money and swaps coins, always inside the rules of its mandate. Every payment gets a receipt.
@@ -205,7 +206,7 @@ function Exchange({ run, onRated }: { run: Run; onRated: (r: Record<string, any>
       <div className="msg-me">{run.ask}</div>
       <div className="msg-ai">
         <span className="avatar">
-          <span className="logo" />
+          <Logo size={16} />
         </span>
         <div className="ai-body">
           {working && (

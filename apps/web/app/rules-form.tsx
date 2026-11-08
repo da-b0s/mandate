@@ -23,7 +23,7 @@ export function RulesForm({ disabled, busy, onCreate, compact = false }: { disab
           </p>
         </>
       )}
-      <div className="grid">
+      <div className="formgrid">
         {field("weeklyUsdc", "Weekly allowance (USDC)", "the most it can spend in any 7 days")}
         {field("perCallUsdc", "Maximum per payment (USDC)", "for any one purchase, transfer or swap")}
         {field("days", "Valid for (days)", "after this, every payment is refused")}
