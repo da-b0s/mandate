@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useOwner } from "@/lib/owner";
+import { CopyButton } from "@/components/copy-button";
 
 const LINKS = [
   ["/agent", "Chat"],
@@ -36,6 +37,7 @@ export function Nav() {
               <div className="menu card small" onMouseLeave={() => setOpen(false)}>
                 <div className="muted">Signed in {o.kind === "google" ? "with Google" : "with a wallet"}</div>
                 <code style={{ wordBreak: "break-all" }}>{who}</code>
+                <CopyButton text={who} label="Copy address" />
                 <Link href="/mandate" onClick={() => setOpen(false)}>Settings</Link>
                 <button
                   onClick={() => {

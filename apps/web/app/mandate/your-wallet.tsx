@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { CopyButton } from "@/components/copy-button";
 
 type Bal = { symbol: string; decimals: number; balance: string };
 // Exact amount for Max (never rounded up past the balance).
@@ -33,7 +34,12 @@ export function YourWallet({ act, busy, refresh }: { act: (k: string, b: Record<
           Your own address, separate from the mandate. Coins from swaps and withdrawals arrive here. Only you can move them; your agent can&apos;t.
         </div>
       </div>
-      {w && <code className="small" style={{ wordBreak: "break-all" }}>{w.address}</code>}
+      {w && (
+        <div className="row">
+          <code className="small" style={{ wordBreak: "break-all" }}>{w.address}</code>
+          <CopyButton text={w.address} />
+        </div>
+      )}
       <div className="money">
         {(w?.balances ?? []).map((b) => (
           <div key={b.symbol}>

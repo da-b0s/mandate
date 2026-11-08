@@ -8,6 +8,7 @@ import { GrantBar } from "../grant-bar";
 import { YourAgent } from "../your-agent";
 import { Schedules } from "./schedules";
 import { YourWallet } from "./your-wallet";
+import { CopyButton } from "@/components/copy-button";
 
 // The owner's console: the agent proposes, the owner decides, the chain enforces.
 export default function MandatePage() {
@@ -73,7 +74,7 @@ export default function MandatePage() {
               {agentAddress && (
                 <div className="row">
                   <code style={{ wordBreak: "break-all" }}>{agentAddress}</code>
-                  <button onClick={() => navigator.clipboard.writeText(agentAddress)}>Copy</button>
+                  <CopyButton text={agentAddress} />
                 </div>
               )}
               <div className="row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 12 }}>

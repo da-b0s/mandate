@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { SignIn, useOwner } from "@/lib/owner";
 import { useOwnerAction } from "@/lib/owner-action";
 import { usdc } from "@/lib/format";
 import { Icon } from "@/components/icons";
 import { RulesForm } from "./rules-form";
+import { CopyButton } from "@/components/copy-button";
 
 /**
  * The whole setup in one place, in order: sign in -> set rules -> add money. Each step opens right
@@ -15,7 +16,6 @@ export function YourAgent() {
   const o = useOwner();
   const me = o.me;
   const { busy, result, act } = useOwnerAction();
-  const [copied, setCopied] = useState(false);
   const creating = useRef(false);
 
   // Signed in but no agent yet: make one, no button needed.
@@ -88,14 +88,7 @@ export function YourAgent() {
         </span>
         <div className="row">
           <code style={{ wordBreak: "break-all" }}>{a!.address}</code>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(a!.address);
-              setCopied(true);
-            }}
-          >
-            {copied ? "Copied" : "Copy address"}
-          </button>
+          <CopyButton text={a!.address} label="Copy address" />
           <button onClick={() => o.refreshMe()}>I sent it, check again</button>
         </div>
         <span className="small muted">You can already chat: free checks, like spotting sanctioned wallets, need no money.</span>
