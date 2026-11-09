@@ -11,6 +11,7 @@ public receipt. Live on Sui mainnet, built on **Tatum** and **Walrus Memory**.
 
 **[Live app](https://mandate-gules-five.vercel.app)** ·
 **[Demo video](https://youtu.be/jqGgQjtLf-E)** ·
+**[Blog post](https://dev.to/dab0s/giving-an-ai-agent-a-wallet-it-cant-empty-10ei)** ·
 **[Explorer](https://mandate-gules-five.vercel.app/explorer)** ·
 **[Proof](docs/PROOF.md)** ·
 [Architecture](docs/ARCHITECTURE.md) ·
