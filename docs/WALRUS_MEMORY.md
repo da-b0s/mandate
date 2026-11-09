@@ -2,7 +2,7 @@
 
 The agent's memory is Walrus Memory, used through the official `@mysten-incubation/memwal` SDK and
 the official relayer. MANDATE builds on it; it does not reimplement storage, search or encryption.
-Client: `apps/agent/src/memory.js`. At the time of writing the account holds **590 memories in 28
+Client: `apps/agent/src/memory.js`. At the time of writing the account holds **622 memories in 33
 namespaces** ([live count](https://mandate-gules-five.vercel.app/explorer)).
 
 ## What is stored

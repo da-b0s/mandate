@@ -1,22 +1,22 @@
 # Proof
 
 Everything MANDATE claims, with a link you can check. Generated from the live record by
-`node scripts/proof-md.js` on 2026-11-08 20:24 UTC. The live
+`node scripts/proof-md.js` on 2026-11-09 21:05 UTC. The live
 version of this page is the [Explorer](https://mandate-gules-five.vercel.app/explorer).
 
 ## At a glance
 
 | | |
 | --- | --- |
-| Payments on Sui mainnet | **213** (6.33 USDC moved) |
-| Tasks completed | **198** |
-| Memories on Walrus Memory | **590** in 28 namespaces |
-| Payments independently re-read through Tatum | **213 of 213** |
-| Wallet Risk Report | 74 payments, 1.48 USDC |
-| Premium Summariser | 42 payments, 2.10 USDC |
+| Payments on Sui mainnet | **226** (7.35 USDC moved) |
+| Tasks completed | **209** |
+| Memories on Walrus Memory | **622** in 33 namespaces |
+| Payments independently re-read through Tatum | **226 of 226** |
+| Wallet Risk Report | 80 payments, 1.60 USDC |
+| Premium Summariser | 46 payments, 2.30 USDC |
 | Token Holder Check | 87 payments, 2.61 USDC |
-| Transfer | 7 payments, 0.07 USDC |
-| Swap | 3 payments, 0.07 USDC |
+| Transfer | 9 payments, 0.57 USDC |
+| Swap | 4 payments, 0.27 USDC |
 
 ## The contract
 
@@ -62,6 +62,19 @@ without their (private) receipt.
 
 | Task | What | Amount | Transaction | Verified |
 | --- | --- | --- | --- | --- |
+| private | Swap | 0.20 USDC | [`5zRyuqi1sw…`](https://suiscan.xyz/mainnet/tx/5zRyuqi1sw5WD2z6Z9F9MbfFhDKeGWp69TMmk2xxNDsc) | Tatum gRPC |
+| private | Transfer | 0.20 USDC | [`FFRcQ3d9NB…`](https://suiscan.xyz/mainnet/tx/FFRcQ3d9NBdCuBySwksW4qiXJmRQmFyf85wWsJb39rAc) | Tatum gRPC |
+| private | Transfer | 0.30 USDC | [`3cBvSk2wDF…`](https://suiscan.xyz/mainnet/tx/3cBvSk2wDFEAZbbxVTAmSRMZVHYnRC2u67wwsBLm85Em) | Tatum gRPC |
+| private | Premium Summariser | 0.05 USDC | [`HpbJ45cfC7…`](https://suiscan.xyz/mainnet/tx/HpbJ45cfC7CdbjyREQW5xk1zHobWMGEbScptxSSpSUaF) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`G2Qbdb6g9m…`](https://suiscan.xyz/mainnet/tx/G2Qbdb6g9m9CRcXorXPbYRGVUx8CD2jW8rqB3e6TacVx) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`3RLukGCwRw…`](https://suiscan.xyz/mainnet/tx/3RLukGCwRwPNSPfxC2rem7xqY7tfz1bpEdHRqNwa4j3Z) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`EKtLiUEDyV…`](https://suiscan.xyz/mainnet/tx/EKtLiUEDyVfXQJyYxJAwtdFdqcbtdpoGgERq9UYcvMeT) | Tatum gRPC |
+| private | Premium Summariser | 0.05 USDC | [`58NwxFLSNc…`](https://suiscan.xyz/mainnet/tx/58NwxFLSNcbBTbpafKzJW4Wd3a34YfXb6WvuTrf4JBTK) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`GeotjVQDhH…`](https://suiscan.xyz/mainnet/tx/GeotjVQDhHybRkx4pdZ3BqiHuhFRBa3rhuxDqSUuKTEc) | Tatum gRPC |
+| private | Premium Summariser | 0.05 USDC | [`KJWrX9btiJ…`](https://suiscan.xyz/mainnet/tx/KJWrX9btiJK9Y3FrwdpnHGjje9RizFCZH9Ahgv2uWCW) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`BiLNnka2nm…`](https://suiscan.xyz/mainnet/tx/BiLNnka2nmBZhyVsT714aqqfgWWL8Q1JHYhAGX3e6UFD) | Tatum gRPC |
+| private | Premium Summariser | 0.05 USDC | [`2URv8eQnwm…`](https://suiscan.xyz/mainnet/tx/2URv8eQnwmRycpFXUxWaNv299RCbAuWtNrLtqJqjyVr3) | Tatum gRPC |
+| private | Wallet Risk Report | 0.02 USDC | [`8HMQYej9DA…`](https://suiscan.xyz/mainnet/tx/8HMQYej9DAjfQaTKwrceM9rzcyhuXAYfKasFUAgcciwk) | Tatum gRPC |
 | [`53f3496a`](https://mandate-gules-five.vercel.app/receipts/53f3496a) | Token Holder Check | 0.03 USDC | [`5Yoe4U9tW2…`](https://suiscan.xyz/mainnet/tx/5Yoe4U9tW2YrfZVUE3yN1xXc2TUd5oaU1kzN3kg81DL1) | Tatum gRPC |
 | [`98d6ff10`](https://mandate-gules-five.vercel.app/receipts/98d6ff10) | Token Holder Check | 0.03 USDC | [`8cHAubxcSw…`](https://suiscan.xyz/mainnet/tx/8cHAubxcSwLNJzYmxWHMSUHhtS8atar4EanZgHDxVcKY) | Tatum gRPC |
 | private | Swap | 0.02 USDC | [`6op9HE766V…`](https://suiscan.xyz/mainnet/tx/6op9HE766VQqHVYRgTfA76ttcRkJ3oMwBJ7aMnVevP22) | Tatum gRPC |

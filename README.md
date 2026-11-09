@@ -30,9 +30,9 @@ Total Recall: Tatum x Walrus Memory hackathon · Track 02, Smart Agents for Real
 | --- | --- |
 | **-86%** wasted spend | Same 50 tasks on mainnet, memory off vs on. Wasted spend fell from 1.25 to 0.18 USDC. |
 | **-43%** cost per useful answer | 0.05 USDC down to 0.03 USDC, with 48 of 50 tasks still answered usefully. |
-| **213** real payments | Real USDC on Sui mainnet, 6.33 USDC moved, every one linked in [PROOF.md](docs/PROOF.md). |
-| **213 of 213** verified via Tatum | Every payment is re-read through Tatum's Sui gRPC before it counts. |
-| **590** memories on Walrus | Ratings, receipts, spend records, approvals and preferences, in 28 namespaces. |
+| **226** real payments | Real USDC on Sui mainnet, 7.35 USDC moved, every one linked in [PROOF.md](docs/PROOF.md). |
+| **226 of 226** verified via Tatum | Every payment is re-read through Tatum's Sui gRPC before it counts. |
+| **622** memories on Walrus | Ratings, receipts, spend records, approvals and preferences, in 33 namespaces. |
 | **Limits checked onchain** | By the Move contract, inside the same transaction that moves the money. An over-limit payment aborts and nothing moves. |
 | **36 + 33** tests | 36 Move unit tests for the contract, 33 for the policy engine, all in CI. |
 
@@ -123,7 +123,7 @@ connection to the chain:
 - **Every chain read** (mandates, balances, vault, events) goes through Tatum gRPC.
 - **Every transaction** is built (gas price, dry run), submitted and confirmed through Tatum: payments,
   transfers, swaps, deposits, withdrawals and every owner action.
-- **Every payment is verified** by re-reading it through Tatum before it counts: 213 of 213.
+- **Every payment is verified** by re-reading it through Tatum before it counts: 226 of 226.
 - **Two data services are built on the Tatum Data API** (token profiles, holders) and the **Tatum
   security API** screens addresses, including the free first check.
 - **Full task reports are archived on Walrus through Tatum's Storage API.**

@@ -21,7 +21,7 @@ retries on rate limits and dropped connections.
 | Balances (USDC held by an agent, sponsor gas) | `apps/agent/src/custody.js`, `apps/web/app/api/me`, `lib/sponsor-guard.ts` | per task and page view (cached) |
 | Build transactions (gas price, dry run) | `packages/chain/src/wallet.js` `execute`, `buildFor` | every transaction |
 | Submit and confirm transactions | `wallet.js` `executeNow`, `submitSigned` | every payment, transfer, swap, deposit, withdrawal, owner action |
-| **Verify payments independently** | `apps/agent/src/pay.js` `verifyPayment`, `transfer.js`, `swap.js` | every single payment: **213 of 213** |
+| **Verify payments independently** | `apps/agent/src/pay.js` `verifyPayment`, `transfer.js`, `swap.js` | every single payment: **226 of 226** |
 | Events (approved caps, swaps) | `apps/agent/src/proposals.js`, `swap.js` | on approval and swap |
 | zkLogin: current epoch, signature verification | `packages/chain/src/zklogin.js` | at Google sign-in |
 
