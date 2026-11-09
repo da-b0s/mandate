@@ -10,7 +10,7 @@ public receipt. Live on Sui mainnet, built on **Tatum** and **Walrus Memory**.
 ![Walrus Memory](https://img.shields.io/badge/memory-Walrus%20Memory-00b894)
 
 **[Live app](https://mandate-gules-five.vercel.app)** ·
-**[Demo video](VIDEO_LINK)** ·
+**[Demo video](https://youtu.be/jqGgQjtLf-E)** ·
 **[Explorer](https://mandate-gules-five.vercel.app/explorer)** ·
 **[Proof](docs/PROOF.md)** ·
 [Architecture](docs/ARCHITECTURE.md) ·
