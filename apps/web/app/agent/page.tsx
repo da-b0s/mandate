@@ -7,9 +7,11 @@ import { Logo } from "@/components/logo";
 import { useOwner } from "@/lib/owner";
 
 type Step = { step: string; at?: string; [k: string]: any };
-type Run = { ask: string; useMemory: boolean; steps: Step[]; receipt?: any; error?: string; ratings?: Record<string, any> };
+type Run = { at?: string; ask: string; useMemory: boolean; steps: Step[]; receipt?: any; error?: string; ratings?: Record<string, any> };
 
 // Money-moving examples, shown once the visitor has their own funded mandate (they go to the owner).
+const SINCE_KEY = "mandate-chat-since";
+
 const OWNER_EXAMPLES = [
   { title: "Swap 0.05 USDC to SUI", note: "coins go to your wallet", ask: "Swap 0.05 USDC to SUI" },
   { title: "Buy WAL every week", note: "a recurring swap", ask: "Buy 0.05 USDC of WAL every week" },
@@ -33,10 +35,39 @@ export default function AgentPage() {
   const endRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const mine = Boolean(owner.me?.agent?.grantId);
+  // Past exchanges come from the user's saved receipts, so a reload keeps the conversation.
+  // "New chat" only hides them (until "Show earlier messages"); nothing is deleted.
+  const [history, setHistory] = useState<Run[]>([]);
+  const [since, setSince] = useState(0);
+  const [showEarlier, setShowEarlier] = useState(false);
+
+  useEffect(() => {
+    try {
+      setSince(Number(localStorage.getItem(SINCE_KEY) ?? 0) || 0);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    if (!mine) return;
+    fetch("/api/chat").then((r) => r.json()).then((j) => setHistory(j.messages ?? [])).catch(() => {});
+  }, [mine]);
+
+  const earlier = history.filter((h) => !showEarlier && h.at && Date.parse(h.at) <= since).length;
+  const shownHistory = showEarlier ? history : history.filter((h) => !h.at || Date.parse(h.at) > since);
+
+  function newChat() {
+    const now = Date.now();
+    setHistory((h) => [...h, ...runs.map((r) => ({ ...r, at: r.at ?? new Date(now - 1).toISOString() }))]);
+    setRuns([]);
+    setShowEarlier(false);
+    setSince(now);
+    try {
+      localStorage.setItem(SINCE_KEY, String(now));
+    } catch {}
+  }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [runs]);
+  }, [runs, history.length]);
 
   async function submit(text: string) {
     if (!text.trim() || busy) return;
@@ -82,6 +113,11 @@ export default function AgentPage() {
       <div className="chat-top">
         {ready ? <MandateChip refreshKey={grantKey} mine={mine} /> : <span className="small muted">Set up your agent to start chatting</span>}
         <div className="row small">
+          {ready && (shownHistory.length > 0 || runs.length > 0) && (
+            <button onClick={newChat} title="Clear the screen. Your history stays saved.">
+              New chat
+            </button>
+          )}
           <span className="muted" title="ON: it uses what it learned to skip sources that weren't worth it. OFF: it pays for everything it planned, so you can compare.">
             Memory
           </span>
@@ -93,7 +129,19 @@ export default function AgentPage() {
       </div>
 
       <div className="thread">
-        {runs.length === 0 ? (
+        {earlier > 0 && (
+          <button className="earlier" onClick={() => setShowEarlier(true)}>
+            Show {earlier} earlier {earlier === 1 ? "message" : "messages"}
+          </button>
+        )}
+        {shownHistory.map((run, i) => (
+          <Exchange
+            key={"h" + (run.receipt?.taskId ?? i)}
+            run={run}
+            onRated={(ratings) => setHistory((hs) => hs.map((r) => (r === run ? { ...r, ratings } : r)))}
+          />
+        ))}
+        {runs.length === 0 && shownHistory.length === 0 ? (
           <div className="empty">
             <span style={{ marginBottom: 16 }}><Logo size={40} /></span>
             <h1>{ready ? "What should your agent do?" : "Meet your agent"}</h1>

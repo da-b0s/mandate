@@ -1,0 +1,12 @@
+[mcp_servers.memwal]
+command = "node"
+args = [
+    "node_modules/@mysten-incubation/memwal-mcp/dist/bin/memwal-mcp.js",
+    "--namespace",
+    "mandate-receipts",
+    "--label",
+    "MANDATE Claude Code",
+]
+
+[mcp_servers.memwal.env]
+MEMWAL_AUTO_SAVE = "0"

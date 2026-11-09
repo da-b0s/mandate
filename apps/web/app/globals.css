@@ -225,3 +225,4 @@ details.trace summary { cursor: pointer; font-size: 13px; color: var(--muted); p
 @media (max-width: 620px) { .formgrid { grid-template-columns: 1fr; } }
 .field { min-width: 0; }
 .field input { width: 100%; min-width: 0; }
+.earlier { align-self: center; font-size: 13px; padding: 6px 14px; color: var(--muted); }
