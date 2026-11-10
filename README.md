@@ -36,6 +36,30 @@ Total Recall: Tatum x Walrus Memory hackathon · Track 02, Smart Agents for Real
 | **Limits checked onchain** | By the Move contract, inside the same transaction that moves the money. An over-limit payment aborts and nothing moves. |
 | **36 + 33** tests | 36 Move unit tests for the contract, 33 for the policy engine, all in CI. |
 
+The -86% and -43% come from one paired run: the same 50 tasks and the same deterministic rater for
+both arms, real payments on mainnet, memory-on starting empty ([method](docs/adr/0001-scripted-rater.md),
+[per-task raw data](docs/replay/)). It is a single run, not a statistical study; the per-task rows are
+there so anyone can recompute it.
+
+## See it
+
+| Memory skips what wasn't worth it | Over the limit: refused by the contract |
+| --- | --- |
+| ![The agent skips the Premium Summariser after three useless ratings](docs/img/memory-skip.jpg) | ![A 2 USDC transfer over the 1 USDC per-payment limit is refused; nothing moves](docs/img/limit-refused.jpg) |
+| **The agent suggests, the owner approves onchain** | **Swaps pay out to the owner, inside the limits** |
+| ![The owner approved blocking the Premium Summariser; the contract now refuses it](docs/img/approved-block.jpg) | ![0.20 USDC swapped into SUI via Aftermath, sent to the owner's wallet](docs/img/swap.jpg) |
+
+## How it meets the judging
+
+| | Where to see it |
+| --- | --- |
+| **Track 02, Smart Agents for Real Life** | A real agent with real money: it buys data, pays people (once or weekly) and swaps, for anyone who signs in with Google. [Live app](https://mandate-gules-five.vercel.app), [demo](https://youtu.be/jqGgQjtLf-E). |
+| **Best Use of Agent Payments** | Funds held by a Move contract; every payment, transfer and swap checked onchain in the same transaction; MPP over HTTP 402; 226 real mainnet payments, all verified. [The contract](#the-contract), [PROOF.md](docs/PROOF.md). |
+| **Best Walrus Memory** | Memory visibly changes behaviour: ratings stop wasted purchases (-86%), become onchain policy when approved, and are readable from Claude Code via the MCP server. 622 memories. [WALRUS_MEMORY.md](docs/WALRUS_MEMORY.md). |
+| **Tatum on the critical path** | Paid plan; every read, transaction and payment verification goes through Tatum's Sui gateway; Data, security and Storage APIs. [TATUM.md](docs/TATUM.md). |
+| **Mainnet, real usage** | Everything is on Sui mainnet with real USDC; every digest is public. [Explorer](https://mandate-gules-five.vercel.app/explorer). |
+| **Engineering quality** | 36 Move + 33 policy tests in CI, `pnpm verify` re-checks claims against mainnet, threat model and limitations written plainly. |
+
 ## Why
 
 AI agents can now do real jobs, and real jobs cost money: a data feed here, a payment to a person
@@ -117,8 +141,8 @@ More in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Built on Tatum
 
 Tatum is on the critical path, not on a status badge. MANDATE runs on **Tatum's paid plan** (Starter:
-4M credits a month, 200 requests per second) and its **Sui mainnet gRPC gateway** is the app's only
-connection to the chain:
+4M credits a month, 200 requests per second) and its **Sui mainnet gRPC gateway** is the agent's path
+to the chain:
 
 - **Every chain read** (mandates, balances, vault, events) goes through Tatum gRPC.
 - **Every transaction** is built (gas price, dry run), submitted and confirmed through Tatum: payments,
@@ -165,10 +189,25 @@ Details: [docs/WALRUS_MEMORY.md](docs/WALRUS_MEMORY.md).
 
 ## Security, honestly
 
-Agent keys are held by our server, encrypted at rest. Because the money lives in the mandate and the
-contract checks every spend, a leaked agent key can lose at most what the limits allow, and the owner
-can stop the mandate and withdraw at any time. The full picture, including what the Walrus relayer
-can see, is in [THREAT_MODEL.md](docs/THREAT_MODEL.md) and [LIMITATIONS.md](docs/LIMITATIONS.md).
+Two different things hold power here, and they are deliberately separate:
+
+- **The money is held by the contract, not by us.** USDC sits inside each user's mandate on Sui. It
+  leaves only through `pay`/`begin_swap` (which check every limit in the same transaction) or
+  `withdraw` (owner only, always available, even after revoking).
+- **The agent keys are held by our server**, encrypted at rest (AES-256-GCM), so the agent can act
+  without the owner signing every purchase.
+
+So if the server or an agent key were compromised, an attacker could spend **at most what that
+mandate's limits allow** (its weekly allowance, its per-payment cap) to payees of their choice. They
+could **not** withdraw the funds, change the rules, raise a limit, or redirect swap output, which the
+contract always sends to the owner. The owner can stop it at any time: **Stop for good** (revoke),
+**Withdraw all**, or simply stop checking in and let the auto-freeze trip. Before custody, funds sat
+in the agent's wallet and a leaked key could have drained it; moving them into the contract removed
+that risk.
+
+What we do not claim: the Walrus Memory relayer sees memory contents in plaintext before encryption,
+and the three data services are ours. Full detail: [THREAT_MODEL.md](docs/THREAT_MODEL.md) and
+[LIMITATIONS.md](docs/LIMITATIONS.md).
 
 ## Repository
 
@@ -186,11 +225,28 @@ docs            proof, architecture, Tatum, Walrus Memory, threat model, limitat
 
 ## Run it locally
 
+The live app needs nothing installed. To run your own copy you need Node 22+, pnpm, and accounts
+with the services below (all have free tiers except where noted).
+
 ```bash
 pnpm install
-cp .env.example .env   # fill in the keys listed there
-pnpm --filter @mandate/web dev
+cp .env.example .env
+pnpm --filter @mandate/store migrate                     # create the database tables
+pnpm --filter @mandate/web dev                           # http://localhost:3000
 ```
+
+| `.env` key | What it is | Where to get it |
+| --- | --- | --- |
+| `TATUM_API_KEY` | Sui gateway, Data, security and Storage APIs | [Tatum dashboard](https://dashboard.tatum.io) (paid plan recommended: storage uploads use about 3,000 credits each) |
+| `MEMWAL_ACCOUNT_ID`, `MEMWAL_PRIVATE_KEY`, `MEMWAL_SERVER_URL` | Walrus Memory account, delegate key, relayer | [memory.walrus.xyz](https://memory.walrus.xyz) (create an account and a delegate key) |
+| `DATABASE_URL`, `DATABASE_URL_POOLED` | Postgres for receipts, agents, schedules | [Neon](https://neon.tech) or any Postgres |
+| `AGENT_SUI_KEY` | Platform key: pays gas for users and welcome credits; needs a little SUI | `sui keytool generate ed25519` |
+| `GRANT_ID` (and optional `REPLAY_GRANT_ID`) | Mandates used by scripts and the replay | `node scripts/create-grant.js` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Google sign-in (zkLogin) | Google Cloud console, OAuth client (web) |
+| `SHINAMI_WALLET_ACCESS_KEY` | zkLogin salt and proofs | [Shinami](https://shinami.com) (Wallet Services key) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Phrasing answers (Gemini); optional | Google AI Studio |
+| `AGENT_KEY_SECRET`, `SESSION_SECRET` | Encrypt agent keys; sign sessions | `openssl rand -hex 32` each |
+| `MPP_RECIPIENT*`, `MPP_SECRET_KEY` | Payout addresses and secret for the data services in `apps/vendors` | any Sui addresses; `openssl rand -hex 32` |
 
 ```bash
 pnpm --filter @mandate/policy test        # 33 policy tests
